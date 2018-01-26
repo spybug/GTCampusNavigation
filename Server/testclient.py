@@ -2,7 +2,8 @@ import json
 import urllib2
 
 data = {
-        'ids': [12, 3, 4, 5, 6]
+        'origin': 'Ferst+Center+For+the+Arts',
+		'destination': 'Clough+Undergraduate+Learning+Commons'
 }
 
 req = urllib2.Request('http://localhost:8080/something')

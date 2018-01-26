@@ -1,9 +1,9 @@
 import subprocess
 import json
-import urllib2
+import urllib
 from bottle import template, run, post, request, response, get, route
 
-key = 8
+key = "AIzaSyCnMawlWDbstS9T6cVN5GTcF1GuokHUVcM"
 
 """
 @route('/hello')
@@ -21,17 +21,20 @@ def something():
 	print("Hello World")
 	
 	#Read received client JSON
-	data = request.json
+	clientJSON = request.json
+	print clientJSON
+	
+	#Parse client JSON into usable parameters
+	origin = clientJSON['origin']
+	dest = clientJSON['destination']
+	
+	#Parse parameters into usable route
+	routeRequest = "https://maps.googleapis.com/maps/api/directions/json?origin=" + origin + "&destination=" + dest + "&mode=walking" + "&key=" + key
+	
+	#Request route
+	response = urllib.urlopen(routeRequest)
+	data = json.loads(response.read())
 	print data
-	
-	#Parse client JSON into Google URL requests
-	origin = data['origin']
-	destination = data['destination']
-	
-	
-	#req = urllib2.Request('http://localhost:8080/something')
-	#req.add_header('Content-Type', 'application/json')
-	#response = urllib2.urlopen(req, json.dumps(data))
 
 """
 @route('/<path>',method = 'POST')

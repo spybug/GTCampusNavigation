@@ -1,25 +1,18 @@
 import subprocess
 import json
 import urllib
+import re
 from bottle import template, run, post, request, response, get, route
 
 key = "AIzaSyCnMawlWDbstS9T6cVN5GTcF1GuokHUVcM"
 
-"""
-@route('/hello')
-def hello():
-    return "Hello World!"
-
-@route('/')
-@route('/hello/<name>')
-def greet(name='Stranger'):
-    return template('Hello {{name}}, how are you?', name=name)
-"""
-
-@route('/something', method='POST')
-def something():
-	print("Hello World")
-	
+#Takes an origin and destination and gives a route
+#Origin and destination are received in the <path>, separated by a question mark
+#EX: <serverpath>/directions/origin?destination
+@route('/directions/<path>')
+def directions(path):
+	#Old JSON code, use later
+	"""
 	#Read received client JSON
 	clientJSON = request.json
 	print clientJSON
@@ -27,6 +20,13 @@ def something():
 	#Parse client JSON into usable parameters
 	origin = clientJSON['origin']
 	dest = clientJSON['destination']
+	"""
+	
+	#Parse URL into usable parameters
+	#Uses "," as delimiter to split variables
+	vars = re.split(r"[/,]", path)
+	origin = vars[0]
+	dest = vars[1]
 	
 	#Parse parameters into usable route
 	routeRequest = "https://maps.googleapis.com/maps/api/directions/json?origin=" + origin + "&destination=" + dest + "&mode=walking" + "&key=" + key
@@ -34,7 +34,7 @@ def something():
 	#Request route
 	response = urllib.urlopen(routeRequest)
 	data = json.loads(response.read())
-	print data
+	return data
 
 """
 @route('/<path>',method = 'POST')

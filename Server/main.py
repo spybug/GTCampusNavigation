@@ -1,7 +1,7 @@
 import requests
 from flask import Flask, request
-app = Flask(__name__)
 
+app = Flask(__name__)
 key = "***REMOVED***"
 
 @app.route('/')
@@ -13,7 +13,11 @@ def get_directions():
     origin = request.args.get('origin')
     destination = request.args.get('destination')
     mode = request.args.get('mode')
-    url = "https://api.mapbox.com/directions/v5/mapbox/" + mode + "/" + origin + ";" + destination + "?overview=full&access_token=" + key
+
+    if not(origin and destination and mode):  # if not all parameters are supplied
+        return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
+
+    url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin, destination, key)
 
     response = requests.get(url).content
     return response

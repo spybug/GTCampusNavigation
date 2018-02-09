@@ -13,7 +13,7 @@ def get_directions():
     origin = request.args.get('origin')
     destination = request.args.get('destination')
     mode = request.args.get('mode')
-    url = "https://api.mapbox.com/directions/v5/mapbox/" + mode + "/" + origin + ";" + destination + "?access_token=" + key
+    url = "https://api.mapbox.com/directions/v5/mapbox/" + mode + "/" + origin + ";" + destination + "?overview=full&access_token=" + key
 
     response = requests.get(url).content
     return response

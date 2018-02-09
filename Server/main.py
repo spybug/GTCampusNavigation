@@ -2,7 +2,7 @@ import requests
 from flask import Flask, request
 app = Flask(__name__)
 
-key = "AIzaSyCnMawlWDbstS9T6cVN5GTcF1GuokHUVcM"
+key = "pk.eyJ1IjoiZ3RjYW1wdXNuYXZpZ2F0aW9ud2ViIiwiYSI6ImNqZGV0amIxZjBpZWMyd21pYm5keWZqdHYifQ.Cm3ZNFq8KFh9UB7NEzHJ2g"
 
 @app.route('/')
 def get_homepage():
@@ -12,7 +12,8 @@ def get_homepage():
 def get_directions():
     origin = request.args.get('origin')
     destination = request.args.get('destination')
-    url = "https://maps.googleapis.com/maps/api/directions/json?origin=" + origin + "&destination=" + destination + "&mode=walking" + "&key=" + key
+    mode = request.args.get('mode')
+    url = "https://api.mapbox.com/directions/v5/mapbox/" + mode + "/" + origin + ";" + destination + "?access_token=" + key
 
     response = requests.get(url).content
     return response

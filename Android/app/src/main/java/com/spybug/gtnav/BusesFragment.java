@@ -7,6 +7,13 @@ import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.ImageButton;
+
+import com.mapbox.mapboxsdk.geometry.LatLng;
+import com.mapbox.mapboxsdk.geometry.LatLngBounds;
+import com.mapbox.mapboxsdk.maps.MapView;
+import com.mapbox.mapboxsdk.maps.MapboxMap;
+import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
 
 
 /**
@@ -28,6 +35,14 @@ public class BusesFragment extends Fragment {
     private String mParam2;
 
     private OnFragmentInteractionListener mListener;
+
+    private MapView mapView;
+    private MapboxMap map;
+
+    private static final LatLngBounds GT_BOUNDS = new LatLngBounds.Builder()
+            .include(new LatLng(33.753312, -84.421579))
+            .include(new LatLng(33.797474, -84.372656))
+            .build();
 
     public BusesFragment() {
         // Required empty public constructor
@@ -63,8 +78,36 @@ public class BusesFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_buses, container, false);
+        View v = inflater.inflate(R.layout.fragment_buses, container, false);
+
+        ImageButton directionsButton = v.findViewById(R.id.directions_button);
+        directionsButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ((MainActivity) getActivity()).openDirectionsFragment(false);
+            }
+        });
+
+        ImageButton bikesButton = v.findViewById(R.id.bikes_button);
+        bikesButton.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                ((MainActivity) getActivity()).openBikesFragment(false);
+            }
+        });
+
+        mapView = v.findViewById(R.id.mapView);
+        mapView.onCreate(savedInstanceState);
+
+        mapView.getMapAsync(new OnMapReadyCallback() {
+            @Override
+            public void onMapReady(MapboxMap mapboxMap) {
+                map = mapboxMap;
+                map.setLatLngBoundsForCameraTarget(GT_BOUNDS);
+            }
+        });
+
+        return v;
     }
 
     // TODO: Rename method, update argument and hook method into UI event

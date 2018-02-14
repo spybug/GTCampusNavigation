@@ -10,6 +10,8 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
+import com.mapbox.mapboxsdk.annotations.Icon;
+import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
@@ -18,6 +20,8 @@ import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+
+import static com.spybug.gtnav.HelperUtil.drawableToBitmap;
 
 
 /**
@@ -42,6 +46,8 @@ public class BusesFragment extends Fragment {
 
     private MapView mapView;
     private MapboxMap map;
+
+    private Icon bus_icon;
 
     private static final LatLngBounds GT_BOUNDS = new LatLngBounds.Builder()
             .include(new LatLng(33.753312, -84.421579))
@@ -103,15 +109,21 @@ public class BusesFragment extends Fragment {
         mapView = v.findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
 
+        IconFactory iconFactory = IconFactory.getInstance(v.getContext());
+
+        bus_icon = iconFactory.defaultMarker();
+
         mapView.getMapAsync(new OnMapReadyCallback() {
             @Override
             public void onMapReady(MapboxMap mapboxMap) {
                 map = mapboxMap;
                 map.setLatLngBoundsForCameraTarget(GT_BOUNDS);
-
                 try {
                     final LatLng[] points = (LatLng[]) new BusesRouteServerRequest(v.getContext()).execute().get();
+                    final LatLng[] buses = (LatLng[]) new BusLocationsServerRequest(v.getContext()).execute().get();
                     drawMarkerlessRoute(points);
+                    drawBusLocations(buses);
+
                 }
                 catch(Exception e) {
                     e.printStackTrace();
@@ -129,6 +141,16 @@ public class BusesFragment extends Fragment {
                 .add(points)
                 .color(Color.parseColor("red"))
                 .width(5));
+
+    }
+
+    public void drawBusLocations(LatLng[] points) {
+        for(LatLng point : points) {
+            map.addMarker(new MarkerOptions()
+                    .position(point)
+                    .title("Bus")
+                    .icon(bus_icon));
+        }
     }
 
     // TODO: Rename method, update argument and hook method into UI event

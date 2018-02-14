@@ -46,9 +46,11 @@ public class MapServerRequest extends AsyncTask<Object, Void, Object> {
     private WeakReference<Context> contextRef;
     private boolean hasNetwork = true;
     private int errorCode = 0;
+    private OnEventListener<LatLng[], String> mCallBack;
 
-    MapServerRequest(Context context) {
+    MapServerRequest(Context context, OnEventListener callback) {
         contextRef = new WeakReference<>(context);
+        mCallBack = callback;
     }
 
     protected void onPreExecute() {
@@ -176,13 +178,20 @@ public class MapServerRequest extends AsyncTask<Object, Void, Object> {
     }
 
     protected void onPostExecute(Object result) {
-        if (errorCode != 0) {
-            if (errorCode == 1) {
-                String info = "You are not connected to the internet. Please try again later.";
-                Toast.makeText(contextRef.get(), info, Toast.LENGTH_LONG).show();
-            } else if (errorCode == 2) {
-                String info = "Could not find location, please try again.";
-                Toast.makeText(contextRef.get(), info, Toast.LENGTH_LONG).show();
+        if (mCallBack != null) {
+            if (errorCode != 0) {
+                if (errorCode == 1) {
+                    String info = "You are not connected to the internet. Please try again later.";
+                    mCallBack.onFailure(info);
+                    //Toast.makeText(contextRef.get(), info, Toast.LENGTH_LONG).show();
+                } else if (errorCode == 2) {
+                    String info = "Could not find location, please try again.";
+                    mCallBack.onFailure(info);
+                    //Toast.makeText(contextRef.get(), info, Toast.LENGTH_LONG).show();
+                }
+            }
+            else {
+                mCallBack.onSuccess((LatLng[]) result);
             }
         }
     }

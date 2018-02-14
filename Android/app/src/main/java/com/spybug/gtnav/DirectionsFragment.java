@@ -22,6 +22,7 @@ import android.view.inputmethod.InputMethodManager;
 import android.widget.EditText;
 import android.widget.ImageButton;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
@@ -168,8 +169,17 @@ public class DirectionsFragment extends Fragment {
                     imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
 
                     try {
-                        final LatLng[] points = (LatLng[]) new MapServerRequest(v.getContext()).execute(myView, getString(R.string.mapbox_key)).get();
-                        drawPoints(points);
+                        new MapServerRequest(v.getContext(), new OnEventListener<LatLng[], String>() {
+                            @Override
+                            public void onSuccess(LatLng[] points) {
+                                drawPoints(points);
+                            }
+
+                            @Override
+                            public void onFailure(String message) {
+                                Toast.makeText(myView.getContext(), message, Toast.LENGTH_LONG).show();
+                            }
+                        }).execute(myView, getString(R.string.mapbox_key));
 
                         return false;
                     }

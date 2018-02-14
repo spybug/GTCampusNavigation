@@ -215,6 +215,102 @@ public class DirectionsFragment extends Fragment {
                 .position(lastPoint)
                 .title("Destination")
                 .icon(destination_icon));
+
+        //<stop tag="ferstcher" title="Tech Tower" lat="33.7722845" lon="-84.39548" stopId="0012"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7722845,-84.39548))
+                .title("Tech Tower")
+                .icon(destination_icon));
+
+        //<stop tag="hubfers" title="HUB/Ferst Dr" lat="33.7727399" lon="-84.3970599" stopId="0085"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7727399,-84.3970599))
+                .title("HUB/Ferst Dr")
+                .icon(destination_icon));
+
+        //<stop tag="centrstud" title="Student Center" lat="33.7734596" lon="-84.3991581" stopId="0044"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7734596,-84.3991581))
+                .title("Student Center")
+                .icon(destination_icon));
+
+        //<stop tag="creccent" title="Recreation Center" lat="33.775097" lon="-84.4023891" stopId="0038"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.775097,-84.4023891))
+                .title("Recreation Center")
+                .icon(destination_icon));
+
+        //<stop tag="fitthall" title="Fitten Hall" lat="33.778273" lon="-84.4041911" stopId="0022"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.778273,-84.4041911))
+                .title("Fitten Hall")
+                .icon(destination_icon));
+
+        //<stop tag="8thwvil" title="8th St & West Village" shortTitle="8th & West Village" lat="33.779616" lon="-84.4047091" stopId="0030"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.779616,-84.4047091))
+                .title("8th St & West Village")
+                .icon(destination_icon));
+
+        //<stop tag="8thhemp" title="8th St & Hemphill Ave" shortTitle="8th & Hemphill" lat="33.779631" lon="-84.4027473" stopId="0006"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.779631,-84.4027473))
+                .title("8th St & Hemphill")
+                .icon(destination_icon));
+
+        //<stop tag="fershemp" title="Ferst Dr & Hemphill Ave" shortTitle="Ferst Dr & Hemphill" lat="33.7784499" lon="-84.4008237" stopId="0017"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7784499,-84.4008237))
+                .title("Ferst Dr & Hemphill")
+                .icon(destination_icon));
+
+        //<stop tag="fersatla" title="Ferst Dr & Atlantic Dr" lat="33.77819" lon="-84.3974904" stopId="0015"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.77819,-84.3974904))
+                .title("Ferst Dr & Atlantic Dr")
+                .icon(destination_icon));
+
+        //<stop tag="klaubldg" title="Klaus Building" lat="33.7770973" lon="-84.3954843" stopId="0019"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7770973,-84.3954843))
+                .title("Klaus Building")
+                .icon(destination_icon));
+
+        //<stop tag="fersfowl" title="Ferst Dr & Fowler St" shortTitle="Ferst Dr & Fowler" lat="33.776893" lon="-84.3937807" stopId="0003"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.776893,-84.3937807))
+                .title("Ferst Dr & Fowler")
+                .icon(destination_icon));
+
+        //<stop tag="tech5th" title="Techwood Dr & 5th St" shortTitle="Techwood Dr & 5th" lat="33.7766855" lon="-84.3921335" stopId="0054"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7766855,-84.3921335))
+                .title("Techwood Dr & 5th")
+                .icon(destination_icon));
+
+        //<stop tag="tech4th" title="Techwood Dr & 4th St" shortTitle="Techwood Dr & 4th" lat="33.7749537" lon="-84.3920488" stopId="0052"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7749537,-84.3920488))
+                .title("Techwood Dr & 4th")
+                .icon(destination_icon));
+
+        //<stop tag="techbob" title="Techwood Dr & Bobby Dodd Way" lat="33.7736674" lon="-84.3920495" stopId="0055"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7736674,-84.3920495))
+                .title("Techwood Dr & Bobby Dodd Way")
+                .icon(destination_icon));
+
+        //<stop tag="technorth" title="Techwood Dr & North Ave" shortTitle="Techwood Dr & North" lat="33.7714502" lon="-84.3920986" stopId="0057"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7714502,-84.3920986))
+                .title("Techwood Dr & North Ave")
+                .icon(destination_icon));
+
+        //<stop tag="naveapts_a" title="North Avenue Apartments - Arrival" shortTitle="North Apartments - Arrival" lat="33.7699398" lon="-84.3916292" stopId="0067"/>
+        map.addMarker(new MarkerOptions()
+                .position(new LatLng(33.7699398,-84.3916292))
+                .title("North Ave Apartments")
+                .icon(destination_icon));
     }
 
     // TODO: Rename method, update argument and hook method into UI event

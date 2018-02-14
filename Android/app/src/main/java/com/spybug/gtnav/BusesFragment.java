@@ -1,6 +1,7 @@
 package com.spybug.gtnav;
 
 import android.content.Context;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
@@ -9,6 +10,9 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
+import com.mapbox.mapboxsdk.annotations.MarkerOptions;
+import com.mapbox.mapboxsdk.annotations.PolylineOptions;
+import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapView;
@@ -78,7 +82,7 @@ public class BusesFragment extends Fragment {
     @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        View v = inflater.inflate(R.layout.fragment_buses, container, false);
+        final View v = inflater.inflate(R.layout.fragment_buses, container, false);
 
         ImageButton directionsButton = v.findViewById(R.id.directions_button);
         directionsButton.setOnClickListener(new View.OnClickListener() {
@@ -104,10 +108,27 @@ public class BusesFragment extends Fragment {
             public void onMapReady(MapboxMap mapboxMap) {
                 map = mapboxMap;
                 map.setLatLngBoundsForCameraTarget(GT_BOUNDS);
+
+                try {
+                    final LatLng[] points = (LatLng[]) new BusesRouteServerRequest(v.getContext()).execute().get();
+                    drawMarkerlessRoute(points);
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
             }
         });
 
         return v;
+    }
+
+    public void drawMarkerlessRoute(LatLng[] points) {
+        map.clear();
+        //Draw Points on Map
+        map.addPolyline(new PolylineOptions()
+                .add(points)
+                .color(Color.parseColor("red"))
+                .width(5));
     }
 
     // TODO: Rename method, update argument and hook method into UI event

@@ -44,7 +44,7 @@ def get_buses():  # calls gt buses vehicles method
     
     for vehicle in vehicles:
         if(vehicle['@routeTag'] == route):
-            vehicleIDs.append((vehicle['@lat'], vehicle['@lon']))
+            vehicleIDs.append((vehicle['@id'], vehicle['@heading'], vehicle['@lat'], vehicle['@lon']))
 
     result = vehicleIDs
     return json.dumps(result)

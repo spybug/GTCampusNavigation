@@ -1,5 +1,7 @@
 import requests
 from flask import Flask, request
+import xmltodict
+import json
 
 app = Flask(__name__)
 key = "pk.eyJ1IjoiZ3RjYW1wdXNuYXZpZ2F0aW9ud2ViIiwiYSI6ImNqZGV0amIxZjBpZWMyd21pYm5keWZqdHYifQ.Cm3ZNFq8KFh9UB7NEzHJ2g"
@@ -32,8 +34,20 @@ def get_buses():  # calls gt buses vehicles method
     }
 
     response = requests.get(url, headers=headers).content
-    #print response
-    return response
+    xmldict = xmltodict.parse(response)
+
+    if not route:
+        return json.dumps(xmldict)
+
+    vehicles = xmldict['body']['vehicle']
+    vehicleIDs = []
+    
+    for vehicle in vehicles:
+        if(vehicle['@routeTag'] == route):
+            vehicleIDs.append((vehicle['@lat'], vehicle['@lon']))
+
+    result = vehicleIDs
+    return json.dumps(result)
 
 @app.route('/routes', methods=['GET'])
 def get_routes():  # calls gt buses routes method
@@ -45,8 +59,9 @@ def get_routes():  # calls gt buses routes method
     }
 
     response = requests.get(url, headers=headers).content
-    #print response
-    return response
+    xmldict = xmltodict.parse(response)
+
+    return json.dumps(xmldict)
 
 @app.route('/redroutePoly', methods=['GET'])
 def get_redroutePoly():

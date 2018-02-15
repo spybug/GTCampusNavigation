@@ -27,7 +27,7 @@ import static com.spybug.gtnav.HelperUtil.haveNetworkConnection;
  * Background task to communicate with the map server
  */
 
-public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
+public class BusLocationsServerRequest extends AsyncTask<Object, Void, List<LatLng>> {
 
     private static final String REQUEST_METHOD = "GET";
     private static final int READ_TIMEOUT = 15000;
@@ -37,7 +37,7 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
     private int errorCode = 0;
     private OnEventListener<List<LatLng>, String> mCallBack;
 
-    BusLocationsServerRequest(Context context, OnEventListener callback) {
+    BusLocationsServerRequest(Context context, OnEventListener<List<LatLng>, String> callback) {
         contextRef = new WeakReference<>(context);
         mCallBack = callback;
     }
@@ -47,13 +47,13 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
     }
 
     @Override
-    protected Object doInBackground(Object[] objects) {
+    protected List<LatLng> doInBackground(Object[] objects) {
         List<LatLng> pointsList = new ArrayList<>();
         LatLng[] points = new LatLng[0];
 
         if (!hasNetwork) {
             errorCode = 1;
-            return points;
+            return pointsList;
         }
 
         String inputLine;
@@ -118,7 +118,7 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
         return pointsList;
     }
 
-    protected void onPostExecute(Object result) {
+    protected void onPostExecute(List<LatLng> result) {
         if (mCallBack != null) {
             if (errorCode != 0) {
                 if (errorCode == 1) {
@@ -127,7 +127,7 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
                 }
             }
             else {
-                mCallBack.onSuccess((List<LatLng>) result);
+                mCallBack.onSuccess(result);
             }
         }
     }

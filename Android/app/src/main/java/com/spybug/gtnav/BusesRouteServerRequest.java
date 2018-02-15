@@ -18,7 +18,7 @@ import static com.spybug.gtnav.HelperUtil.haveNetworkConnection;
  * Background task to get a bus route
  */
 
-public class BusesRouteServerRequest extends AsyncTask<Object, Void, Object> {
+public class BusesRouteServerRequest extends AsyncTask<Object, Void, List<LatLng>> {
 
     private WeakReference<Context> contextRef;
     private boolean hasNetwork = true;
@@ -35,7 +35,7 @@ public class BusesRouteServerRequest extends AsyncTask<Object, Void, Object> {
     }
 
     @Override
-    protected Object doInBackground(Object[] objects) {
+    protected List<LatLng> doInBackground(Object[] objects) {
         List<LatLng> points = new ArrayList<>();
 
         if (!hasNetwork) {

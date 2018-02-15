@@ -8,7 +8,10 @@ import com.mapbox.services.commons.models.Position;
 import com.mapbox.services.commons.utils.PolylineUtils;
 
 import java.lang.ref.WeakReference;
+import java.util.ArrayList;
 import java.util.List;
+
+import static com.spybug.gtnav.HelperUtil.haveNetworkConnection;
 
 
 /**
@@ -18,17 +21,27 @@ import java.util.List;
 public class BusesRouteServerRequest extends AsyncTask<Object, Void, Object> {
 
     private WeakReference<Context> contextRef;
+    private boolean hasNetwork = true;
+    private int errorCode = 0;
+    private OnEventListener<List<LatLng>, String> mCallBack;
 
-    BusesRouteServerRequest(Context context) {
+    BusesRouteServerRequest(Context context, OnEventListener callback) {
         contextRef = new WeakReference<>(context);
+        mCallBack = callback;
     }
 
     protected void onPreExecute() {
+        hasNetwork = haveNetworkConnection(contextRef.get());
     }
 
     @Override
     protected Object doInBackground(Object[] objects) {
-        LatLng[] points;
+        List<LatLng> points = new ArrayList<>();
+
+        if (!hasNetwork) {
+            errorCode = 1;
+            return points;
+        }
 
         String routeGeometry = "yccmEznbbO??M??J?J?~A?ZAh@AL?B?DCLINEHSXSVGJCDILMTSb@Yr@Mb@CLE\\E^AFGr@QlB" +
                 "AF?FADAPKhAq@rHAJAF?DE^Kh@ITIRWb@WZCBSNKFQHA@UFE@SBOB[@]?IAa@AeDK??q@Cg@CI?a@AyAGI??T@zF@x" +
@@ -39,18 +52,27 @@ public class BusesRouteServerRequest extends AsyncTask<Object, Void, Object> {
 
         List<Position> positionList =  PolylineUtils.decode(routeGeometry, 5);
 
-        // Convert Positions List into LatLng[]
-        points = new LatLng[positionList.size()];
+        // Convert Positions List into List<LatLng>
         for (int i = 0; i < positionList.size(); i++) {
-            points[i] = new LatLng(
+            points.add(new LatLng(
                     positionList.get(i).getLatitude(),
-                    positionList.get(i).getLongitude());
+                    positionList.get(i).getLongitude()));
         }
 
         return points;
     }
 
     protected void onPostExecute(Object result) {
-
+        if (mCallBack != null) {
+            if (errorCode != 0) {
+                if (errorCode == 1) {
+                    String info = "You are not connected to the internet. Please try again later.";
+                    mCallBack.onFailure(info);
+                }
+            }
+            else {
+                mCallBack.onSuccess((List<LatLng>) result);
+            }
+        }
     }
 }

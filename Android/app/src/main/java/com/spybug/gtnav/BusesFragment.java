@@ -10,6 +10,7 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
 
+import android.widget.Toast;
 import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
@@ -20,6 +21,7 @@ import com.mapbox.mapboxsdk.geometry.LatLngBounds;
 import com.mapbox.mapboxsdk.maps.MapView;
 import com.mapbox.mapboxsdk.maps.MapboxMap;
 import com.mapbox.mapboxsdk.maps.OnMapReadyCallback;
+import java.util.List;
 
 import static com.spybug.gtnav.HelperUtil.drawableToBitmap;
 
@@ -118,11 +120,38 @@ public class BusesFragment extends Fragment {
             public void onMapReady(MapboxMap mapboxMap) {
                 map = mapboxMap;
                 map.setLatLngBoundsForCameraTarget(GT_BOUNDS);
+                map.clear();
+                // Draw Bus Route
                 try {
-                    final LatLng[] points = (LatLng[]) new BusesRouteServerRequest(v.getContext()).execute().get();
-                    final LatLng[] buses = (LatLng[]) new BusLocationsServerRequest(v.getContext()).execute().get();
-                    drawMarkerlessRoute(points);
-                    drawBusLocations(buses);
+                    new BusesRouteServerRequest(v.getContext(), new OnEventListener<List<LatLng>, String>() {
+                        @Override
+                        public void onSuccess(List<LatLng> route) {
+                           drawMarkerlessRoute(route);
+                        }
+
+                        @Override
+                        public void onFailure(String message) {
+                            Toast.makeText(v.getContext(), message, Toast.LENGTH_LONG).show();
+                        }
+                    }).execute();
+
+                }
+                catch(Exception e) {
+                    e.printStackTrace();
+                }
+                // Draw Locations of Buses
+                try {
+                    new BusLocationsServerRequest(v.getContext(), new OnEventListener<List<LatLng>, String>() {
+                        @Override
+                        public void onSuccess(List<LatLng> buses) {
+                            drawBusLocations(buses);
+                        }
+
+                        @Override
+                        public void onFailure(String message) {
+                            Toast.makeText(v.getContext(), message, Toast.LENGTH_LONG).show();
+                        }
+                    }).execute();
 
                 }
                 catch(Exception e) {
@@ -134,23 +163,29 @@ public class BusesFragment extends Fragment {
         return v;
     }
 
-    public void drawMarkerlessRoute(LatLng[] points) {
-        map.clear();
+    public void drawMarkerlessRoute(List<LatLng> points) {
+        LatLng[] locations = new LatLng[points.size()];
+        points.toArray(locations);
+
         //Draw Points on Map
         map.addPolyline(new PolylineOptions()
-                .add(points)
+                .add(locations)
                 .color(Color.parseColor("red"))
                 .width(5));
 
     }
 
-    public void drawBusLocations(LatLng[] points) {
-        for(LatLng point : points) {
+    public void drawBusLocations(List<LatLng> points) {
+        LatLng[] locations = new LatLng[points.size()];
+        points.toArray(locations);
+
+        for(LatLng point : locations) {
             map.addMarker(new MarkerOptions()
                     .position(point)
                     .title("Bus")
                     .icon(bus_icon));
         }
+
     }
 
     // TODO: Rename method, update argument and hook method into UI event

@@ -3,10 +3,7 @@ package com.spybug.gtnav;
 import android.content.Context;
 import android.os.AsyncTask;
 
-import android.widget.Toast;
-
 import com.mapbox.mapboxsdk.geometry.LatLng;
-
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -38,9 +35,11 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
     private WeakReference<Context> contextRef;
     private boolean hasNetwork = true;
     private int errorCode = 0;
+    private OnEventListener<List<LatLng>, String> mCallBack;
 
-    BusLocationsServerRequest(Context context) {
+    BusLocationsServerRequest(Context context, OnEventListener callback) {
         contextRef = new WeakReference<>(context);
+        mCallBack = callback;
     }
 
     protected void onPreExecute() {
@@ -57,12 +56,9 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
             return points;
         }
 
-
         String inputLine;
         String stringUrl;
         String result;
-        String routeGeometry;
-
 
         stringUrl = String.format("%sbuses",
                     BuildConfig.API_URL);
@@ -117,20 +113,21 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, Object> {
             catch(JSONException ex) {
                 ex.printStackTrace();
             }
-
         }
 
-        return pointsList.toArray(points);
+        return pointsList;
     }
 
     protected void onPostExecute(Object result) {
-        if (errorCode != 0) {
-            if (errorCode == 1) {
-                String info = "You are not connected to the internet. Please try again later.";
-                Toast.makeText(contextRef.get(), info, Toast.LENGTH_LONG).show();
-            } else if (errorCode == 2) {
-                String info = "Could not find location, please try again.";
-                Toast.makeText(contextRef.get(), info, Toast.LENGTH_LONG).show();
+        if (mCallBack != null) {
+            if (errorCode != 0) {
+                if (errorCode == 1) {
+                    String info = "You are not connected to the internet. Please try again later.";
+                    mCallBack.onFailure(info);
+                }
+            }
+            else {
+                mCallBack.onSuccess((List<LatLng>) result);
             }
         }
     }

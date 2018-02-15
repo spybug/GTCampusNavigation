@@ -15,6 +15,7 @@ import com.mapbox.mapboxsdk.annotations.Icon;
 import com.mapbox.mapboxsdk.annotations.IconFactory;
 import com.mapbox.mapboxsdk.annotations.MarkerOptions;
 import com.mapbox.mapboxsdk.annotations.PolylineOptions;
+import com.mapbox.mapboxsdk.camera.CameraUpdate;
 import com.mapbox.mapboxsdk.camera.CameraUpdateFactory;
 import com.mapbox.mapboxsdk.geometry.LatLng;
 import com.mapbox.mapboxsdk.geometry.LatLngBounds;
@@ -127,6 +128,11 @@ public class BusesFragment extends Fragment {
                         @Override
                         public void onSuccess(List<LatLng> route) {
                            drawMarkerlessRoute(route);
+                            LatLngBounds ROUTE_BOUNDS = new LatLngBounds.Builder()
+                                    .includes(route)
+                                    .build();
+
+                            map.easeCamera(CameraUpdateFactory.newLatLngBounds(ROUTE_BOUNDS, 100));
                         }
 
                         @Override
@@ -139,6 +145,7 @@ public class BusesFragment extends Fragment {
                 catch(Exception e) {
                     e.printStackTrace();
                 }
+                String route = "red";
                 // Draw Locations of Buses
                 try {
                     new BusLocationsServerRequest(v.getContext(), new OnEventListener<List<LatLng>, String>() {
@@ -151,7 +158,7 @@ public class BusesFragment extends Fragment {
                         public void onFailure(String message) {
                             Toast.makeText(v.getContext(), message, Toast.LENGTH_LONG).show();
                         }
-                    }).execute();
+                    }).execute(route);
 
                 }
                 catch(Exception e) {

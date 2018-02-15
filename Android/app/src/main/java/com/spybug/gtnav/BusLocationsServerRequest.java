@@ -49,7 +49,7 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, List<LatL
     @Override
     protected List<LatLng> doInBackground(Object[] objects) {
         List<LatLng> pointsList = new ArrayList<>();
-        LatLng[] points = new LatLng[0];
+        String routeTag = (String)objects[0];
 
         if (!hasNetwork) {
             errorCode = 1;
@@ -60,8 +60,9 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, List<LatL
         String stringUrl;
         String result;
 
-        stringUrl = String.format("%sbuses",
-                    BuildConfig.API_URL);
+        stringUrl = String.format("%sbuses?route=%s",
+                    BuildConfig.API_URL,
+                    routeTag);
 
         try {
             //Create a URL object holding our url
@@ -99,15 +100,13 @@ public class BusLocationsServerRequest extends AsyncTask<Object, Void, List<LatL
 
         if (result != null) {
             try {
-                JSONObject directionsResultJson = new JSONObject(result);
-                JSONArray vehicles = directionsResultJson.getJSONObject("body").getJSONArray("vehicle");
+                JSONArray vehicles = new JSONArray(result);
 
                 for (int i = 0; i < vehicles.length(); i++) {
-                    JSONObject vehicle = vehicles.getJSONObject(i);
-                    if(vehicle.getString("@routeTag").equals("red")){
-                        pointsList.add(new LatLng(vehicle.getDouble("@lat"),
-                                vehicle.getDouble("@lon")));
-                    }
+                    JSONArray vehicle = vehicles.getJSONArray(i);
+                    pointsList.add(new LatLng(vehicle.getDouble(2),
+                            vehicle.getDouble(3)));
+
                 }
             }
             catch(JSONException ex) {

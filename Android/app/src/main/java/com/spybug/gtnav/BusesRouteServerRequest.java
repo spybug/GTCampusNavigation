@@ -25,7 +25,7 @@ public class BusesRouteServerRequest extends AsyncTask<Object, Void, Object> {
     private int errorCode = 0;
     private OnEventListener<List<LatLng>, String> mCallBack;
 
-    BusesRouteServerRequest(Context context, OnEventListener callback) {
+    BusesRouteServerRequest(Context context, OnEventListener<List<LatLng>, String> callback) {
         contextRef = new WeakReference<>(context);
         mCallBack = callback;
     }
@@ -62,7 +62,7 @@ public class BusesRouteServerRequest extends AsyncTask<Object, Void, Object> {
         return points;
     }
 
-    protected void onPostExecute(Object result) {
+    protected void onPostExecute(List<LatLng> result) {
         if (mCallBack != null) {
             if (errorCode != 0) {
                 if (errorCode == 1) {
@@ -71,7 +71,7 @@ public class BusesRouteServerRequest extends AsyncTask<Object, Void, Object> {
                 }
             }
             else {
-                mCallBack.onSuccess((List<LatLng>) result);
+                mCallBack.onSuccess(result);
             }
         }
     }

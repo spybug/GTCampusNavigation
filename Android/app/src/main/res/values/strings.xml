@@ -3,6 +3,35 @@
 
     <string name="navigation_drawer_open">Open navigation drawer</string>
     <string name="navigation_drawer_close">Close navigation drawer</string>
-
     <string name="action_settings">Settings</string>
+
+    <!--Menu items strings-->
+    <string name="directions">Directions</string>
+    <string name="directions_underline"><u>Directions</u></string>
+    <string name="bikes">Bikes</string>
+    <string name="bikes_underline"><u>Bikes</u></string>
+    <string name="buses">Buses</string>
+    <string name="buses_underline"><u>Buses</u></string>
+    <string name="schedule">Schedule</string>
+    <string name="settings">Settings</string>
+    <string name="faq">FAQ</string>
+    <string name="feedback">Feedback</string>
+
+    <string name="current_location">Current Location</string>
+    <string name="search_title">Search</string>
+    <string name="search_hint">Search&#8230;</string>
+
+    <string name="blue_route">Blue Route</string>
+    <string name="red_route">Red Route</string>
+    <string name="green_route">Green Route</string>
+    <string name="tech_trolley">Tech Trolley</string>
+    <string name="midnight_rambler">Midnight Rambler</string>
+    <string name="tech_express">Tech Express</string>
+
+    <!-- TODO: Remove or change this placeholder text -->
+    <string name="hello_blank_fragment">Hello blank fragment</string>
+    <string name="title_activity_maps">Map</string>
+
+    <!-- API keys-->
+    <string name="mapbox_key">pk.eyJ1Ijoia2luZ3JhaGFtIiwiYSI6ImNqY204cTVjczAwa2oyd3FuZWtjeXFseG8ifQ.CQVMxRnXzzjoB6fhWiPLzw</string>
 </resources>

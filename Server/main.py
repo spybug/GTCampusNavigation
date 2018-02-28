@@ -6,25 +6,6 @@ import json
 app = Flask(__name__)
 key = "pk.eyJ1IjoiZ3RjYW1wdXNuYXZpZ2F0aW9ud2ViIiwiYSI6ImNqZGV0amIxZjBpZWMyd21pYm5keWZqdHYifQ.Cm3ZNFq8KFh9UB7NEzHJ2g"
 
-# All stops are in order
-red_stops = [
-	(33.7722845,-84.39548),		# Tech Tower
-	(33.7727399,-84.3970599),
-	(33.7734596,-84.3991581),
-	(33.775097,-84.4023891),
-	(33.779616,-84.4047091),
-	(33.779631,-84.4027473),
-	(33.7784499,-84.4008237),
-	(33.77819,-84.3974904),
-	(33.7770973,-84.3954843),
-	(33.776893,-84.3937807),
-	(33.7766855,-84.3921335),
-	(33.7749537,-84.3920488),
-	(33.7736674,-84.3920495),
-	(33.7714502,-84.3920986),
-	(33.7699398,-84.3916292)	# North Ave
-]
-
 @app.route('/')
 def get_homepage():
     return "Testing- This page is the default home page. Probably change to have a readme. Use /directions endpoint."
@@ -43,21 +24,21 @@ def get_directions():
 	if mode == 'bus':
 		origin_stop = (0,0)
 		destination_stop = (0,0)
+		destination_stop_tag = ''
 		
 		origin_tuple = literal_eval(origin)
 		dest_tuple = literal_eval(destination)
-		#Locations of origin_stop and destination_stop in list
-		oStop_list_loc = 0
-		dStop_list_loc = 0
 		
 		min_distance = 9999
+		
+		# Get stops from database
+		red_stops = [INSERT SQL HERE]
 		
 		# Find origin_stop
 		for counter in range(0, 14):
 			if abs(red_stops[counter][0] - origin_tuple[0]) + abs(red_stops[counter][1] - origin_tuple[1]) < min_distance:
 				origin_stop = red_stops[counter]
 				min_distance = abs(red_stops[counter][0] - origin_tuple[0]) + abs(red_stops[counter][1] - origin_tuple[1])
-				oStop_list_loc = counter
 		
 		min_distance = 9999
 		# Find destination_stop
@@ -65,30 +46,56 @@ def get_directions():
 			if abs(red_stops[counter][0] - destination_tuple[0]) + abs(red_stops[counter][1] - destination_tuple[1]) < min_distance:
 				destination_stop = red_stops[counter]
 				min_distance = abs(red_stops[counter][0] - destination_tuple[0]) + abs(red_stops[counter][1] - destination_tuple[1])
-				dStop_list_loc = counter
 		
-		# Create waypoints for mapbox route
-		bus_stops = [red_route[oStop_list_loc]]
-		counter = oStop_list_loc + 1
-		while counter != dStop_list_loc and counter != oStop_list_loc:
-			counter = counter % 14
-			waypoints.append(red_route[counter])
-			counter += 1
-		bus_stops.append([red_route[oStop_list_loc]])
+		origin_stop_tag = [INSERT SQL HERE]
+		destination_stop_tag = [INSERT SQL HERE]
 		
-		waypoints = origin + ';' + ";".join("%s,%s" % tup for tup in bus_stops) + ';' + destination
+		# Get best bus route and when it will be at the destination
+		url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/predictions'
+		headers= {
+			'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+		}
 		
-		#Get mapbox data
-		#NOTE: Fix concatenation of walking into bus ride into walking
-		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{}?overview=full&access_token={}'.format(waypoints, key)
+		response = requests.get(url, headers=headers).content
+		xmldict = xmltodict.parse(response)
+
+		route = ''
+		lowest_time = 999999
+		arrival_time = 0
+	
+		vehicles = xmldict['body']['predictions']
+    
+		# For origin stop
+		for vehicle in vehicles:
+			if (!vehicle['@dirTitleBecauseNoPredictions']):
+				#NOTE: Remove routeTag later
+				if (vehicle['@stop_tag'] == origin_stop_tag and vehicle['direction']['prediction']['@seconds'] < lowest_time and vehicle['@routeTag'] = 'red')
+					route = vehicle['@stop_tag']
+					lowest_time = vehicle['direction']['prediction']['@seconds']
+		
+		# For destination stop
+		for vehicle in vehicles:
+			if (vehicle['@stop_tag'] == destination_stop_tag and vehicle['@routeTag'] = route)
+				route = vehicle['@stop_tag']
+				lowest_time = vehicle['direction']['prediction']['@seconds']
+				break
+		
+		#Get mapbox data for walking
+		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(origin, origin_stop, key)
+		walking_1 = requests.get(url).content
+		
+		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(destination, destination_stop, key)
+		walking_2 = requests.get(url).content
+		
+		
 	else:
 		if not(origin and destination and mode):  # if not all parameters are supplied
 			return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
 
 		url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin, destination, key)
 
-	response = requests.get(url).content
-	return response
+    response = requests.get(url).content
+    return response
 
 # Returns the buses current locations, based on which route you selected
 # Available routes:
@@ -110,16 +117,16 @@ def get_buses():  # calls gt buses vehicles method
     response = requests.get(url, headers=headers).content
     xmldict = xmltodict.parse(response)
 
-    if not route:
+	 if not route:
         return json.dumps(xmldict)
 
     vehicles = xmldict['body']['vehicle']
     vehicleIDs = []
     
     for vehicle in vehicles:
-        if(vehicle['@routeTag'] == route):
+        if (vehicle['@routeTag'] == route):
             vehicleIDs.append((vehicle['@id'], vehicle['@heading'], vehicle['@lat'], vehicle['@lon']))
-
+	
     result = vehicleIDs
     return json.dumps(result)
 

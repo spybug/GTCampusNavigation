@@ -1,7 +1,8 @@
-import requests
 from flask import Flask, request
-import xmltodict
 import json
+import polyline
+import requests
+import xmltodict
 
 app = Flask(__name__)
 key = "***REMOVED***"
@@ -43,7 +44,7 @@ def get_buses():  # calls gt buses vehicles method
     vehicleIDs = []
     
     for vehicle in vehicles:
-        if(vehicle['@routeTag'] == route):
+        if (vehicle['@routeTag'] == route):
             vehicleIDs.append((vehicle['@id'], vehicle['@heading'], vehicle['@lat'], vehicle['@lon']))
 
     result = vehicleIDs
@@ -51,7 +52,7 @@ def get_buses():  # calls gt buses vehicles method
 
 @app.route('/routes', methods=['GET'])
 def get_routes():  # calls gt buses routes method
-    route = request.args.get('route')
+    routeTag = request.args.get('route')
 
     url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/routes'
     headers= {
@@ -61,7 +62,30 @@ def get_routes():  # calls gt buses routes method
     response = requests.get(url, headers=headers).content
     xmldict = xmltodict.parse(response)
 
-    return json.dumps(xmldict)
+    if not routeTag:
+        return json.dumps(xmldict)
+
+    routes = xmldict['body']['route']
+    routeLatLons = []
+
+    for route in routes:
+        if (route['@tag'] == routeTag):
+            # Loop through all paths for route into lat,lon array
+            paths = route['path']
+            for path in paths:
+                for point in path['point']:
+                    try:
+                        latLonTuple = (round(float(point['@lat']), 5), round(float(point['@lon']), 5))
+                        routeLatLons.append(latLonTuple)
+                    except ValueError:
+                        continue
+            break
+
+    encodedPolyline = ''
+    if len(routeLatLons) > 0:
+        encodedPolyline = polyline.encode(routeLatLons, 5)
+
+    return json.dumps(encodedPolyline)
 
 @app.route('/redroutePoly', methods=['GET'])
 def get_redroutePoly():

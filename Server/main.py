@@ -67,7 +67,7 @@ def get_directions():
     
 		# For origin stop
 		for vehicle in vehicles:
-			if (!vehicle['@dirTitleBecauseNoPredictions']):
+			if not(vehicle['@dirTitleBecauseNoPredictions']):
 				#NOTE: Remove routeTag later
 				if (vehicle['@stop_tag'] == origin_stop_tag and vehicle['direction']['prediction']['@seconds'] < lowest_time and vehicle['@routeTag'] = 'red')
 					route = vehicle['@stop_tag']

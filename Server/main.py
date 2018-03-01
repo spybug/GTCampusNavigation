@@ -67,25 +67,30 @@ def get_routes():  # calls gt buses routes method
 
     routes = xmldict['body']['route']
     routeLatLons = []
+    latLonPaths = []
 
     for route in routes:
         if (route['@tag'] == routeTag):
             # Loop through all paths for route into lat,lon array
             paths = route['path']
             for path in paths:
+                latLonPath = []
                 for point in path['point']:
                     try:
-                        latLonTuple = (round(float(point['@lat']), 5), round(float(point['@lon']), 5))
-                        routeLatLons.append(latLonTuple)
+                        latLonTuple = (round(float(point['@lat']), 6), round(float(point['@lon']), 6))
+                        latLonPath.append(latLonTuple)
                     except ValueError:
                         continue
+                latLonPaths.append(latLonPath)
             break
 
-    encodedPolyline = ''
-    if len(routeLatLons) > 0:
-        encodedPolyline = polyline.encode(routeLatLons, 5)
+    encodedPolyline = []
+    for latLonPath in latLonPaths:
+        encodedPolyline.append(polyline.encode(latLonPath, 5))
 
-    return json.dumps(encodedPolyline)
+    json_result = {"route": encodedPolyline}
+
+    return json.dumps(json_result)
 
 @app.route('/redroutePoly', methods=['GET'])
 def get_redroutePoly():

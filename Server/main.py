@@ -92,6 +92,23 @@ def get_routes():  # calls gt buses routes method
 
     return json.dumps(json_result)
 
+@app.route('/bikes', methods=['GET'])
+def get_bikes():  # Get bike station locations from relay bikes api
+
+	try:
+		url = 'https://relaybikeshare.socialbicycles.com/opendata/station_information.json'
+		response = requests.get(url).json()
+		response = response['data']['stations']  # only use station info
+		stations = []
+
+		for station in response:
+			stationLoc = station['lat'], station['lon']
+			stations.append(stationLoc)
+
+		return json.dumps(stations)
+	except Error as e:
+		return str(e)
+
 @app.route('/redroutePoly', methods=['GET'])
 def get_redroutePoly():
 

@@ -6,10 +6,10 @@ class myDB:
     cursor = None
 
     def __init__(self):
-        server = '***REMOVED***'
-        database = '***REMOVED***'
-        username = '***REMOVED***'
-        password = '***REMOVED***'
+        server = ''
+        database = ''
+        username = ''
+        password = ''
         driver = '{ODBC Driver 13 for SQL Server}'
 
         self.connection = None

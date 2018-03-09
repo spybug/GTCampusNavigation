@@ -3,6 +3,7 @@ import json
 import polyline
 import requests
 import xmltodict
+from myDB import myDB
 
 app = Flask(__name__)
 key = "***REMOVED***"
@@ -12,6 +13,19 @@ key = "***REMOVED***"
 def get_homepage():
     return "Testing- This page is the default home page. Probably change to have a readme. Use /directions endpoint."
 
+
+def get_db():
+    if not hasattr(g, 'sql_db'):
+        g.sql_db = myDB()
+    return g.sql_db
+
+@app.teardown_appcontext
+def close_db(error):
+    """Closes the database again at the end of the request."""
+    if hasattr(g, 'sql_db'):
+        if error is None:
+            g.sql_db.commit()
+        g.sql_db.close()
 
 @app.route('/directions', methods=['GET'])
 def get_directions():
@@ -24,7 +38,6 @@ def get_directions():
 
     url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin,
                                                                                                       destination, key)
-
     response = requests.get(url).content
     return response
 
@@ -99,19 +112,30 @@ def get_routes():  # calls gt buses routes method
 
 
 @app.route('/bikes', methods=['GET'])
-def get_bikes():  # Get bike station locations from relay bikes api
-
+def get_bikes():  # Get bike station status from relay bikes api
     try:
-        url = 'https://relaybikeshare.socialbicycles.com/opendata/station_information.json'
+        get_db()
+        url = 'https://relaybikeshare.socialbicycles.com/opendata/station_status.json'
         response = requests.get(url).json()
         response = response['data']['stations']  # only use station info
         stations = []
 
+        # Get Static Bike station info such as location from database
+        results = g.sql_db.query_dict_return('SELECT * FROM BikeStation', None)
+
+        # Combine with station status info from api request
         for station in response:
-            stationInfo = {"station_id": station['station_id'], "name": "Station Name", "lat": station['lat'], "lon": station['lon'],
-                           "num_bikes_available": 0, "num_bikes_disabled": 0, "num_docks_available": 0,
-                           "is_installed": 0, "is_renting": 0, "is_returning": 0}
+            id = station['station_id']
+            row = results.get(id)
+            stationInfo = {"station_id": id, "name": row[1], "lat": row[2], "lon": row[3],
+                           "num_bikes_available": station['num_bikes_available'], "num_bikes_disabled": station['num_bikes_disabled'],
+                           "num_docks_available": station['num_docks_available'], "is_installed": station['is_installed'],
+                           "is_renting": station['is_renting'], "is_returning": station['is_returning']}
             stations.append(stationInfo)
+
+            # Inserts all the bike stations into the database
+            #g.sql_db.query_no_return('INSERT INTO BikeStation (StationID, StationName, Latitude, Longitude) VALUES ( ? , ?, ?, ?);',
+                                     #(station['station_id'], station['name'], station['lat'], station['lon']))
 
         return json.dumps(stations)
     except Exception as e:

@@ -150,7 +150,7 @@ def add_busStops():  # Calls gt buses route method to get all route information
         return ''
 
 # Get bus stops for a specific route from database
-@app.route('/busStops', methods = ['GET'])
+@app.route('/stops', methods = ['GET'])
 def get_busStops():
     routeTag = request.args.get('route')
     if routeTag is None:

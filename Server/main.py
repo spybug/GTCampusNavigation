@@ -110,6 +110,66 @@ def get_routes():  # calls gt buses routes method
 
     return json.dumps(json_result)
 
+# Adds all bus stops to the database (given that there aren't in there already)
+@app.route('/addBusStops', methods=['GET'])
+def add_busStops():  # Calls gt buses route method to get all route information
+
+    url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/routes'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+    }
+
+    try:
+        get_db()
+        response = requests.get(url, headers=headers).content
+        xmldict = xmltodict.parse(response)
+
+        routes = xmldict['body']['route']
+
+        for route in routes:    # For every route add the bus stops and make association between stop and route
+            stops = route['stop']  # Get all stops for this route
+            print(stops)
+            for stop in stops:
+                # Inserts all the bus stops into the busStops table if they aren't in there already
+                try:
+                    lat = round(float(stop['@lat']), 6)
+                    lon = round(float(stop['@lon']), 6)
+                except ValueError:
+                    continue
+                # Must match location AND RouteName
+                query = 'IF NOT EXISTS (SELECT * FROM BusStop WHERE Latitude = ? AND Longitude = ? AND RouteName = ?)' \
+                        'BEGIN INSERT INTO BusStop ' \
+                        '(Latitude, Longitude, StopTitle, RouteName) VALUES (?, ?, ?, ?) END;'
+
+                g.sql_db.query_no_return(query, (lat, lon, route['@tag'], lat, lon, stop['@title'], route['@tag']))
+
+        return 'Successfully added stops'
+
+    except Exception as e:
+        print(str(e))
+        return ''
+
+# Get bus stops for a specific route from database
+@app.route('/busStops', methods = ['GET'])
+def get_busStops():
+    routeTag = request.args.get('route')
+    if routeTag is None:
+        return ''
+
+    try:
+        get_db()
+        stops = []
+
+        results = g.sql_db.query_many('SELECT * FROM BusStop WHERE RouteName = ?', routeTag)
+        for row in results:
+            stopInfo = {'Latitude': row[0], 'Longitude': row[1], 'Title': row[2]}
+            stops.append(stopInfo)
+        return json.dumps(stops)
+
+    except Exception as e:
+        print(str(e))
+        return ''
+
 
 @app.route('/bikes', methods=['GET'])
 def get_bikes():  # Get bike station status from relay bikes api
@@ -126,8 +186,13 @@ def get_bikes():  # Get bike station status from relay bikes api
         # Combine with station status info from api request
         for station in response:
             id = station['station_id']
-            row = results.get(id)
-            stationInfo = {"station_id": id, "name": row[1], "lat": row[2], "lon": row[3],
+            row = results.get(id, None)
+
+            # If station doesn't exist in db
+            if row is None:
+                continue
+
+            stationInfo = {"station_id": id, "name": row[0], "lat": row[1], "lon": row[2],
                            "num_bikes_available": station['num_bikes_available'], "num_bikes_disabled": station['num_bikes_disabled'],
                            "num_docks_available": station['num_docks_available'], "is_installed": station['is_installed'],
                            "is_renting": station['is_renting'], "is_returning": station['is_returning']}
@@ -139,7 +204,8 @@ def get_bikes():  # Get bike station status from relay bikes api
 
         return json.dumps(stations)
     except Exception as e:
-        return str(e)
+        print(str(e))
+        return ''
 
 
 @app.route('/redroutePoly', methods=['GET'])

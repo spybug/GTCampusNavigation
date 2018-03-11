@@ -29,7 +29,8 @@ class myDB:
             self.connection.close()
 
     def commit(self):
-        self.connection.commit()
+        if self.connection is not None:
+            self.connection.commit()
 
     def query_no_return(self, query, parameters = None):
         if parameters is None:

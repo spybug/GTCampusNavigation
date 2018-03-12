@@ -3,7 +3,7 @@ import json
 import polyline
 import requests
 import xmltodict
-from myDB import myDB
+from db import db
 
 app = Flask(__name__)
 key = "***REMOVED***"
@@ -11,22 +11,23 @@ key = "***REMOVED***"
 
 @app.route('/')
 def get_homepage():
-    return "Testing- This page is the default home page. Probably change to have a readme. Use /directions endpoint."
+    return "Testing- This page is the default home page. Probably change to have a readme."
 
 
 def get_db():
     if not hasattr(g, 'sql_db'):
-        g.sql_db = myDB()
+        g.sql_db = db()
     return g.sql_db
 
 @app.teardown_appcontext
 def close_db(error):
     """Closes the database again at the end of the request."""
-    if hasattr(g, 'sql_db'):
+    if hasattr(g, 'sql_db'):  # If we have a database connection then commit and close
         if error is None:
             g.sql_db.commit()
         g.sql_db.close()
 
+# Get Directions from origin to destination using mode of travel from Mapbox API
 @app.route('/directions', methods=['GET'])
 def get_directions():
     origin = request.args.get('origin')
@@ -36,11 +37,13 @@ def get_directions():
     if not (origin and destination and mode):  # if not all parameters are supplied
         return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
 
+    # Make request to mapbox
     url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin,
                                                                                                       destination, key)
     response = requests.get(url).content
     return response
 
+# Get all current bus information (id, location, direction, etc) for a specific route
 @app.route('/buses', methods=['GET'])
 def get_buses():  # calls gt buses vehicles method
     route = request.args.get('route')
@@ -59,7 +62,7 @@ def get_buses():  # calls gt buses vehicles method
     vehicles = xmldict['body']['vehicle']
     vehicleIDs = []
 
-    for vehicle in vehicles:
+    for vehicle in vehicles:  # Loop through all the vehicles and only return the ones for the route we want
         if (vehicle['@routeTag'] == route):
             vehicleInfo = {'id': vehicle['@id'], 'dirTag': vehicle['@dirTag'], 'heading': vehicle['@heading'],
                            'lat': vehicle['@lat'], 'lon': vehicle['@lon']}
@@ -68,7 +71,7 @@ def get_buses():  # calls gt buses vehicles method
     result = vehicleIDs
     return json.dumps(result)
 
-
+# Get bus route geometry as an encoded polyline for a specific route from gt buses
 @app.route('/routes', methods=['GET'])
 def get_routes():  # calls gt buses routes method
     routeTag = request.args.get('route')
@@ -81,14 +84,14 @@ def get_routes():  # calls gt buses routes method
     response = requests.get(url, headers=headers).content
     xmldict = xmltodict.parse(response)
 
-    if not routeTag:
+    if not routeTag:  # Return all route information if not route is specified
         return json.dumps(xmldict)
 
     routes = xmldict['body']['route']
     latLonPaths = []
 
     for route in routes:
-        if (route['@tag'] == routeTag):
+        if (route['@tag'] == routeTag):  # Find route we want
             # Loop through all paths for route into lat,lon array
             paths = route['path']
             for path in paths:
@@ -103,7 +106,7 @@ def get_routes():  # calls gt buses routes method
             break
 
     encodedPolyline = []
-    for latLonPath in latLonPaths:
+    for latLonPath in latLonPaths:  # Encode all path pieces
         encodedPolyline.append(polyline.encode(latLonPath, 5))
 
     json_result = {"route": encodedPolyline}
@@ -128,15 +131,15 @@ def add_busStops():  # Calls gt buses route method to get all route information
 
         for route in routes:    # For every route add the bus stops and make association between stop and route
             stops = route['stop']  # Get all stops for this route
-            print(stops)
+
             for stop in stops:
-                # Inserts all the bus stops into the busStops table if they aren't in there already
                 try:
                     lat = round(float(stop['@lat']), 6)
                     lon = round(float(stop['@lon']), 6)
                 except ValueError:
                     continue
-                # Must match location AND RouteName
+                # Insert bus stop into the busStops table if it isn't in there already
+                # Must match lat/long AND RouteName
                 query = 'IF NOT EXISTS (SELECT * FROM BusStop WHERE Latitude = ? AND Longitude = ? AND RouteName = ?)' \
                         'BEGIN INSERT INTO BusStop ' \
                         '(Latitude, Longitude, StopTitle, RouteName) VALUES (?, ?, ?, ?) END;'
@@ -161,20 +164,22 @@ def get_busStops():
         stops = []
 
         results = g.sql_db.query_many('SELECT * FROM BusStop WHERE RouteName = ?', routeTag)
-        for row in results:
+        for row in results:  # For every bus stop returned, beautify information into json response
             stopInfo = {'Latitude': row[0], 'Longitude': row[1], 'Title': row[2]}
             stops.append(stopInfo)
+
         return json.dumps(stops)
 
     except Exception as e:
         print(str(e))
         return ''
 
-
+# Get all Relay bike station information (location, bikes, docks, etc) from Relay API and our database
 @app.route('/bikes', methods=['GET'])
-def get_bikes():  # Get bike station status from relay bikes api
+def get_bikes():
     try:
         get_db()
+        # Get bike station status from relay bikes api
         url = 'https://relaybikeshare.socialbicycles.com/opendata/station_status.json'
         response = requests.get(url).json()
         response = response['data']['stations']  # only use station info
@@ -186,12 +191,13 @@ def get_bikes():  # Get bike station status from relay bikes api
         # Combine with station status info from api request
         for station in response:
             id = station['station_id']
-            row = results.get(id, None)
+            row = results.get(id, None)  # Get matching row from database
 
             # If station doesn't exist in db
             if row is None:
                 continue
 
+            # Format all the information we want to return
             stationInfo = {"station_id": id, "name": row[0], "lat": row[1], "lon": row[2],
                            "num_bikes_available": station['num_bikes_available'], "num_bikes_disabled": station['num_bikes_disabled'],
                            "num_docks_available": station['num_docks_available'], "is_installed": station['is_installed'],
@@ -206,12 +212,6 @@ def get_bikes():  # Get bike station status from relay bikes api
     except Exception as e:
         print(str(e))
         return ''
-
-
-@app.route('/redroutePoly', methods=['GET'])
-def get_redroutePoly():
-    response = 'yccmEznbbO??M??J?J?~A?ZAh@AL?B?DCLINEHSXSVGJCDILMTSb@Yr@Mb@CLE\\E^AFGr@QlBAF?FADAPKhAq@rHAJAF?DE^Kh@ITIRWb@WZCBSNKFQHA@UFE@SBOB[@]?IAa@AeDK??q@Cg@CI?a@AyAGI??T@zF@xA}A?{@CE?a@AG?_@AC?m@??vA?PAjD?dBEDmAAcBAGU?}B?[?Q?I?e@?c@AwA?S?O@O?{F?OAK?CGMHI|@w@h@g@^]hAcARUHKHKESEQCYAW?A?[@[@YNwA@IHu@BQ@QBM@k@@gE@y@?S?S?O?W?E?u@?K?{@Fk@BMFUBKRi@HK\\g@POPMNIBALG~@i@BCHGJKFSFc@@q@?aB?W@W?g@?O?I?Q?M@iB@k@@oC`@AF?p@EZCxAKJ?j@CL?J?J?V@\\?V?F?R?Z@|@?nA@T?R?N?F?~BApA@jA@`@?^?P?`@@F?`@B@?ZB\\Hf@Dj@@V@vA?h@??_A?OAMACACECGAE@GBGH?JAL?NBPA^wA?WAk@Ag@E]I?lDEbB?x@?H?rDAp@?xB[?{@AgBA'
-    return response
 
 
 if __name__ == '__main__':

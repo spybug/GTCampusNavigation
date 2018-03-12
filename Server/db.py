@@ -1,15 +1,15 @@
 import pyodbc
 
-class myDB:
+class db:
 
     connection = None
     cursor = None
 
     def __init__(self):
-        server = ''
-        database = ''
-        username = ''
-        password = ''
+        server = 'gtnavsqlserver.database.windows.net'
+        database = 'gtnavsqldb'
+        username = 'gtnavadmin'
+        password = 'GTNavigationRule$'
         driver = '{ODBC Driver 13 for SQL Server}'
 
         self.connection = None

@@ -205,8 +205,12 @@ def get_bikes():
             stations.append(stationInfo)
 
             # Inserts all the bike stations into the database
-            #g.sql_db.query_no_return('INSERT INTO BikeStation (StationID, StationName, Latitude, Longitude) VALUES ( ? , ?, ?, ?);',
+            # g.sql_db.query_no_return('INSERT INTO BikeStation (StationID, StationName, Latitude, Longitude) VALUES ( ? , ?, ?, ?);',
                                      #(station['station_id'], station['name'], station['lat'], station['lon']))
+
+            # Statement to Delete Bikes that are out of the area we want to show
+            # can also check on insert but this shows bounding box
+            # DELETE FROM BikeStation WHERE Latitude < 33.75744 OR Latitude > 33.795217 OR Longitude < -84.418489 OR Longitude > -84.368278;
 
         return json.dumps(stations)
     except Exception as e:

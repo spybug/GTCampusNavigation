@@ -2,7 +2,6 @@ from flask import Flask, request, g
 import json
 import polyline
 import requests
-import xmltodict
 from db import db
 
 app = Flask(__name__)
@@ -45,27 +44,29 @@ def get_directions():
 
 # Get all current bus information (id, location, direction, etc) for a specific route
 @app.route('/buses', methods=['GET'])
-def get_buses():  # calls gt buses vehicles method
+def get_buses():  # calls gt buses vehicles method (json version)
     route = request.args.get('route')
 
-    url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/vehicles'
+    url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/vehicles'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
     }
 
     response = requests.get(url, headers=headers).content
-    xmldict = xmltodict.parse(response)
 
+    # Return all buses if no route is specified
     if not route:
-        return json.dumps(xmldict)
+        return response
 
-    vehicles = xmldict['body']['vehicle']
+    response = json.loads(response)
+
+    vehicles = response['vehicle']
     vehicleIDs = []
 
     for vehicle in vehicles:  # Loop through all the vehicles and only return the ones for the route we want
-        if (vehicle['@routeTag'] == route):
-            vehicleInfo = {'id': vehicle['@id'], 'dirTag': vehicle['@dirTag'], 'heading': vehicle['@heading'],
-                           'lat': vehicle['@lat'], 'lon': vehicle['@lon']}
+        if vehicle['routeTag'] == route:
+            vehicleInfo = {'id': vehicle['id'], 'dirTag': vehicle['dirTag'], 'heading': vehicle['heading'],
+                           'lat': vehicle['lat'], 'lon': vehicle['lon']}
             vehicleIDs.append(vehicleInfo)
 
     result = vehicleIDs
@@ -73,32 +74,33 @@ def get_buses():  # calls gt buses vehicles method
 
 # Get bus route geometry as an encoded polyline for a specific route from gt buses
 @app.route('/routes', methods=['GET'])
-def get_routes():  # calls gt buses routes method
+def get_routes():  # calls gt buses routes method (json version)
     routeTag = request.args.get('route')
 
-    url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/routes'
+    url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
     }
 
     response = requests.get(url, headers=headers).content
-    xmldict = xmltodict.parse(response)
 
-    if not routeTag:  # Return all route information if not route is specified
-        return json.dumps(xmldict)
+    if not routeTag:  # Return all route information if no route is specified
+        return response
 
-    routes = xmldict['body']['route']
+    response = json.loads(response)
+
+    routes = response['route']
     latLonPaths = []
 
     for route in routes:
-        if (route['@tag'] == routeTag):  # Find route we want
+        if route['tag'] == routeTag:  # Find route we want
             # Loop through all paths for route into lat,lon array
             paths = route['path']
             for path in paths:
                 latLonPath = []
                 for point in path['point']:
                     try:
-                        latLonTuple = (round(float(point['@lat']), 6), round(float(point['@lon']), 6))
+                        latLonTuple = (round(float(point['lat']), 6), round(float(point['lon']), 6))
                         latLonPath.append(latLonTuple)
                     except ValueError:
                         continue
@@ -117,7 +119,7 @@ def get_routes():  # calls gt buses routes method
 @app.route('/addBusStops', methods=['GET'])
 def add_busStops():  # Calls gt buses route method to get all route information
 
-    url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/routes'
+    url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
     }
@@ -125,17 +127,18 @@ def add_busStops():  # Calls gt buses route method to get all route information
     try:
         get_db()
         response = requests.get(url, headers=headers).content
-        xmldict = xmltodict.parse(response)
+        response = json.loads(response)
 
-        routes = xmldict['body']['route']
+        routes = response['route']
 
         for route in routes:    # For every route add the bus stops and make association between stop and route
             stops = route['stop']  # Get all stops for this route
 
             for stop in stops:
                 try:
-                    lat = round(float(stop['@lat']), 6)
-                    lon = round(float(stop['@lon']), 6)
+                    # Round bus stop location
+                    lat = round(float(stop['lat']), 6)
+                    lon = round(float(stop['lon']), 6)
                 except ValueError:
                     continue
                 # Insert bus stop into the busStops table if it isn't in there already
@@ -144,7 +147,7 @@ def add_busStops():  # Calls gt buses route method to get all route information
                         'BEGIN INSERT INTO BusStop ' \
                         '(Latitude, Longitude, StopTitle, RouteName) VALUES (?, ?, ?, ?) END;'
 
-                g.sql_db.query_no_return(query, (lat, lon, route['@tag'], lat, lon, stop['@title'], route['@tag']))
+                g.sql_db.query_no_return(query, (lat, lon, route['tag'], lat, lon, stop['title'], route['tag']))
 
         return 'Successfully added stops'
 
@@ -173,6 +176,7 @@ def get_busStops():
     except Exception as e:
         print(str(e))
         return ''
+
 
 # Get all Relay bike station information (location, bikes, docks, etc) from Relay API and our database
 @app.route('/bikes', methods=['GET'])

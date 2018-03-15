@@ -52,13 +52,11 @@ def get_buses():  # calls gt buses vehicles method (json version)
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
     }
 
-    response = requests.get(url, headers=headers).content
+    response = requests.get(url, headers=headers).json()
 
     # Return all buses if no route is specified
     if not route:
-        return response
-
-    response = json.loads(response)
+        return json.dumps(response)
 
     vehicles = response['vehicle']
     vehicleIDs = []
@@ -82,12 +80,10 @@ def get_routes():  # calls gt buses routes method (json version)
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
     }
 
-    response = requests.get(url, headers=headers).content
+    response = requests.get(url, headers=headers).json()
 
     if not routeTag:  # Return all route information if no route is specified
         return response
-
-    response = json.loads(response)
 
     routes = response['route']
     latLonPath = []
@@ -154,8 +150,7 @@ def add_busStops():  # Calls gt buses route method to get all route information
 
     try:
         get_db()
-        response = requests.get(url, headers=headers).content
-        response = json.loads(response)
+        response = requests.get(url, headers=headers).json()
 
         routes = response['route']
 

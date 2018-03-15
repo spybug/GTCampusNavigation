@@ -7,7 +7,7 @@ from db import db
 app = Flask(__name__)
 key = "pk.eyJ1IjoiZ3RjYW1wdXNuYXZpZ2F0aW9ud2ViIiwiYSI6ImNqZGV0amIxZjBpZWMyd21pYm5keWZqdHYifQ.Cm3ZNFq8KFh9UB7NEzHJ2g"
 routeTags = {'blue': 'blue', 'express': 'tech', 'green': 'green',
-             'rambler': 'night', 'red': 'red', 'trolley': 'trolley'}
+             'midnight': 'night', 'red': 'red', 'trolley': 'trolley'}
 
 @app.route('/')
 def get_homepage():

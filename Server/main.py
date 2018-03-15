@@ -90,26 +90,54 @@ def get_routes():  # calls gt buses routes method (json version)
     response = json.loads(response)
 
     routes = response['route']
-    latLonPaths = []
+    latLonPath = []
+    lastLatLon = None
 
     for route in routes:
         if route['tag'] == routeTag:  # Find route we want
             # Loop through all paths for route into lat,lon array
             paths = route['path']
-            for path in paths:
-                latLonPath = []
-                for point in path['point']:
-                    try:
-                        latLonTuple = (round(float(point['lat']), 6), round(float(point['lon']), 6))
-                        latLonPath.append(latLonTuple)
-                    except ValueError:
-                        continue
-                latLonPaths.append(latLonPath)
-            break
+            while len(paths) > 0:
+                if lastLatLon is None:
+                    path = paths.pop(0)  # Get First path and add to list
+                    for point in path['point']:
+                        try:
+                            latLonTuple = (round(float(point['lat']), 6), round(float(point['lon']), 6))
+                            latLonPath.append(latLonTuple)
+                            lastLatLon = latLonTuple
+                        except ValueError:
+                            continue
+
+                else:  # For every other path besides the first
+                    closetPath = None
+                    closetDistance = None
+                    for path in paths:  # Find closet path to previous path
+                        points = path['point']
+                        firstPoint = points[0]  # Check first point in this path to last point
+                        try:
+                            lat = abs(round(float(firstPoint['lat']), 6))
+                            lon = abs(round(float(firstPoint['lon']), 6))
+                        except ValueError:
+                            continue
+                        lastLon, lastLat = lastLatLon
+                        distance = abs((lat + lon) - (abs(lastLon) + abs(lastLat)))
+                        # Update closet path and distance if we find a closer path
+                        if closetDistance is None or distance < closetDistance:
+                            closetDistance = distance
+                            closetPath = path
+
+                    paths.remove(closetPath)
+
+                    for point in closetPath['point']:  # Add all points from the next closet path
+                        try:
+                            latLonTuple = (round(float(point['lat']), 6), round(float(point['lon']), 6))
+                            latLonPath.append(latLonTuple)
+                            lastLatLon = latLonTuple
+                        except ValueError:
+                            continue
 
     encodedPolyline = []
-    for latLonPath in latLonPaths:  # Encode all path pieces
-        encodedPolyline.append(polyline.encode(latLonPath, 5))
+    encodedPolyline.append(polyline.encode(latLonPath, 5))
 
     json_result = {"route": encodedPolyline}
 

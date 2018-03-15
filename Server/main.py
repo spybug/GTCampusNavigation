@@ -83,7 +83,7 @@ def get_routes():  # calls gt buses routes method (json version)
     response = requests.get(url, headers=headers).json()
 
     if not routeTag:  # Return all route information if no route is specified
-        return response
+        return json.dumps(response)
 
     routes = response['route']
     latLonPath = []

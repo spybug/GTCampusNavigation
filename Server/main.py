@@ -6,7 +6,8 @@ from db import db
 
 app = Flask(__name__)
 key = "***REMOVED***"
-
+routeTags = {'blue': 'blue', 'express': 'tech', 'green': 'green',
+             'rambler': 'night', 'red': 'red', 'trolley': 'trolley'}
 
 @app.route('/')
 def get_homepage():
@@ -45,7 +46,7 @@ def get_directions():
 # Get all current bus information (id, location, direction, etc) for a specific route
 @app.route('/buses', methods=['GET'])
 def get_buses():  # calls gt buses vehicles method (json version)
-    route = request.args.get('route')
+    route = routeTags.get(request.args.get('route'), None)
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/vehicles'
     headers = {
@@ -73,7 +74,7 @@ def get_buses():  # calls gt buses vehicles method (json version)
 # Get bus route geometry as an encoded polyline for a specific route from gt buses
 @app.route('/routes', methods=['GET'])
 def get_routes():  # calls gt buses routes method (json version)
-    routeTag = request.args.get('route')
+    routeTag = routeTags.get(request.args.get('route'), None)
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
     headers = {
@@ -181,7 +182,8 @@ def add_busStops():  # Calls gt buses route method to get all route information
 # Get bus stops for a specific route from database
 @app.route('/stops', methods = ['GET'])
 def get_busStops():
-    routeTag = request.args.get('route')
+    routeTag = routeTags.get(request.args.get('route'), None)
+
     if routeTag is None:
         return ''
 

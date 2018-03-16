@@ -227,10 +227,17 @@ def get_bikes():
                 continue
 
             # Format all the information we want to return
-            stationInfo = {"station_id": id, "name": row[0], "lat": row[1], "lon": row[2],
-                           "num_bikes_available": station['num_bikes_available'], "num_bikes_disabled": station['num_bikes_disabled'],
-                           "num_docks_available": station['num_docks_available'], "is_installed": station['is_installed'],
-                           "is_renting": station['is_renting'], "is_returning": station['is_returning']}
+            stationInfo = {
+                "station_id": id, 
+                "name": row[1], 
+                "lat": row[2], "lon": row[3],
+                "num_bikes_available": station['num_bikes_available'], 
+                "num_bikes_disabled": station['num_bikes_disabled'],
+                "num_docks_available": station['num_docks_available'], 
+                "is_installed": station['is_installed'],
+                "is_renting": station['is_renting'], 
+                "is_returning": station['is_returning']
+            }
             stations.append(stationInfo)
 
             # Inserts all the bike stations into the database

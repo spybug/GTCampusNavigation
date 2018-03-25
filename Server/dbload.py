@@ -26,19 +26,27 @@ for route in routes:
 		lastLat = 0
 		lastLon = 0
 		while x < len(paths):
-			path = paths[x]
-			latLonPath = []
-			for point in path['point']:
-				if ((numpy.isclose(lastLat, point['@lat'], rtol=2e-06, atol=2e-06) and numpy.isclose(lastLon, point['@lon'], rtol=2e-06, atol=2e-06)) or (lastLat == 0 and lastLon == 0)):
+			print x + 1
+			if ((lastLat == round(float(paths[x]['point'][0]['@lat']), 6) and lastLon == round(float(paths[x]['point'][0]['@lon']), 6)) or (lastLat == 0 and lastLon == 0)):
+				print "\tLastLat: ", lastLat
+				print "\tLastLon: ", lastLon
+				path = paths[x]
+				latLonPath = []
+				for point in path['point']:
+					print "\t\tPoint", point
+					print
 					try:
 						latLonTuple = (round(float(point['@lat']), 6), round(float(point['@lon']), 6))
 						latLonPath.append(latLonTuple)
 					except ValueError:
 						continue
 					x = 0
-					lastLat = point['@lat']
-					lastLon = point['@lon']
-			latLonPaths = latLonPaths + latLonPath
+					lastLat = round(float(point['@lat']), 6)
+					lastLon = round(float(point['@lon']), 6)
+					print "\t\tLastLat: ", lastLat
+					print "\t\tLastLon: ", lastLon
+				latLonPaths.extend(latLonPath)
+			x += 1
 		break
 
 notencodedPolyline = []

@@ -1,14 +1,31 @@
-import requests
-from flask import Flask, request
-import xmltodict
+from flask import Flask, request, g
 import json
+import polyline
+import requests
+import xmltodict
+from myDB import myDB
 
 app = Flask(__name__)
 key = "pk.eyJ1IjoiZ3RjYW1wdXNuYXZpZ2F0aW9ud2ViIiwiYSI6ImNqZGV0amIxZjBpZWMyd21pYm5keWZqdHYifQ.Cm3ZNFq8KFh9UB7NEzHJ2g"
+routeTags = {'blue': 'blue', 'express': 'tech', 'green': 'green',
+'midnight': 'night', 'red': 'red', 'trolley': 'trolley'}
 
 @app.route('/')
 def get_homepage():
     return "Testing- This page is the default home page. Probably change to have a readme. Use /directions endpoint."
+
+def get_db():
+    if not hasattr(g, 'sql_db'):
+        g.sql_db = myDB()
+    return g.sql_db
+
+@app.teardown_appcontext
+def close_db(error):
+    """Closes the database again at the end of the request."""
+    if hasattr(g, 'sql_db'):
+        if error is None:
+            g.sql_db.commit()
+g.sql_db.close()
 
 # Returns directions from an origin to a destination.
 # Mode: The method of travel. 'walking', 'cycling', and 'driving' are straightforward shots to the destination
@@ -24,7 +41,6 @@ def get_directions():
 	if mode == 'bus':
 		origin_stop = (0,0)
 		destination_stop = (0,0)
-		destination_stop_tag = ''
 		
 		origin_tuple = literal_eval(origin)
 		dest_tuple = literal_eval(destination)
@@ -32,7 +48,7 @@ def get_directions():
 		min_distance = 9999
 		
 		# Get stops from database
-		red_stops = [INSERT SQL HERE]
+		red_stops = g.sql_db.query_dict_return('SELECT * FROM 
 		
 		# Find origin_stop
 		for counter in range(0, 14):
@@ -80,13 +96,21 @@ def get_directions():
 				lowest_time = vehicle['direction']['prediction']['@seconds']
 				break
 		
+		route_geometry = [INSERT SQL HERE]
+		
 		#Get mapbox data for walking
 		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(origin, origin_stop, key)
-		walking_1 = requests.get(url).content
+		dummy_JSON = requests.get(url).content
+		walking_1 = polyline.decode(json.loads(dummy_JSON)["routes"][0]["geometry"])
 		
 		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(destination, destination_stop, key)
-		walking_2 = requests.get(url).content
+		walking_2 = polyline.decode(json.loads(requests.get(url).content)["routes"][0]["geometry"])
 		
+		full_geometry = polyline.encode(walking_1 + route_geometry + walking_2)
+		dummy_JSON = json.loads(dummyJSON)
+		dummy_JSON["routes"][0]["geometry"] = full_geometry
+		
+		return dummy_JSON
 		
 	else:
 		if not(origin and destination and mode):  # if not all parameters are supplied
@@ -97,7 +121,7 @@ def get_directions():
     response = requests.get(url).content
     return response
 
-# Returns the buses current locations, based on which route you selected
+# Get all current bus information (id, location, direction, etc.) for a specific route
 # Available routes:
 #	red
 #	blue
@@ -132,23 +156,156 @@ def get_buses():  # calls gt buses vehicles method
 
 @app.route('/routes', methods=['GET'])
 def get_routes():  # calls gt buses routes method
-    route = request.args.get('route')
+    routeTag = request.args.get('route')
 
     url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/routes'
-    headers= {
-        'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
     }
 
     response = requests.get(url, headers=headers).content
     xmldict = xmltodict.parse(response)
 
-    return json.dumps(xmldict)
+    if not routeTag:
+        return json.dumps(xmldict)
 
-@app.route('/redroutePoly', methods=['GET'])
-def get_redroutePoly():
+    routes = xmldict['body']['route']
+    latLonPaths = []
 
-    response = 'yccmEznbbO??M??J?J?~A?ZAh@AL?B?DCLINEHSXSVGJCDILMTSb@Yr@Mb@CLE\\E^AFGr@QlBAF?FADAPKhAq@rHAJAF?DE^Kh@ITIRWb@WZCBSNKFQHA@UFE@SBOB[@]?IAa@AeDK??q@Cg@CI?a@AyAGI??T@zF@xA}A?{@CE?a@AG?_@AC?m@??vA?PAjD?dBEDmAAcBAGU?}B?[?Q?I?e@?c@AwA?S?O@O?{F?OAK?CGMHI|@w@h@g@^]hAcARUHKHKESEQCYAW?A?[@[@YNwA@IHu@BQ@QBM@k@@gE@y@?S?S?O?W?E?u@?K?{@Fk@BMFUBKRi@HK\\g@POPMNIBALG~@i@BCHGJKFSFc@@q@?aB?W@W?g@?O?I?Q?M@iB@k@@oC`@AF?p@EZCxAKJ?j@CL?J?J?V@\\?V?F?R?Z@|@?nA@T?R?N?F?~BApA@jA@`@?^?P?`@@F?`@B@?ZB\\Hf@Dj@@V@vA?h@??_A?OAMACACECGAE@GBGH?JAL?NBPA^wA?WAk@Ag@E]I?lDEbB?x@?H?rDAp@?xB[?{@AgBA'
-    return response
+    for route in routes:
+        if (route['@tag'] == routeTag):
+            # Loop through all paths for route into lat,lon array
+            paths = route['path']
+            for path in paths:
+                latLonPath = []
+                for point in path['point']:
+                    try:
+                        latLonTuple = (round(float(point['@lat']), 6), round(float(point['@lon']), 6))
+                        latLonPath.append(latLonTuple)
+                    except ValueError:
+                        continue
+                latLonPaths.append(latLonPath)
+            break
+
+    encodedPolyline = []
+    for latLonPath in latLonPaths:
+        encodedPolyline.append(polyline.encode(latLonPath, 5))
+
+    json_result = {"route": encodedPolyline}
+
+    return json.dumps(json_result)
+
+# Adds all bus stops to the database (given that there aren't in there already)
+@app.route('/addBusStops', methods=['GET'])
+def add_busStops():  # Calls gt buses route method to get all route information
+
+    url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
+    headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+    }
+
+    try:
+        get_db()
+        response = requests.get(url, headers=headers).json()
+
+        routes = response['route']
+
+        for route in routes:    # For every route add the bus stops and make association between stop and route
+            stops = route['stop']  # Get all stops for this route
+
+            for stop in stops:
+                try:
+                    # Round bus stop location
+                    lat = round(float(stop['lat']), 6)
+                    lon = round(float(stop['lon']), 6)
+                except ValueError:
+                    continue
+                # Insert bus stop into the busStops table if it isn't in there already
+                # Must match lat/long AND RouteName
+                query = 'IF NOT EXISTS (SELECT * FROM BusStop WHERE Latitude = ? AND Longitude = ? AND RouteName = ?)' \
+                        'BEGIN INSERT INTO BusStop ' \
+                        '(Latitude, Longitude, StopTitle, RouteName) VALUES (?, ?, ?, ?) END;'
+
+                g.sql_db.query_no_return(query, (lat, lon, route['tag'], lat, lon, stop['title'], route['tag']))
+
+        return 'Successfully added stops'
+
+    except Exception as e:
+        print(str(e))
+        return ''
+
+# Get bus stops for a specific route from database
+@app.route('/stops', methods = ['GET'])
+def get_busStops():
+    routeTag = routeTags.get(request.args.get('route'), None)
+
+    if routeTag is None:
+        return ''
+
+    try:
+        get_db()
+        stops = []
+
+        results = g.sql_db.query_many('SELECT * FROM BusStop WHERE RouteName = ?', routeTag)
+        for row in results:  # For every bus stop returned, beautify information into json response
+            stopInfo = {'Latitude': row[0], 'Longitude': row[1], 'Title': row[2]}
+            stops.append(stopInfo)
+
+        return json.dumps(stops)
+
+    except Exception as e:
+        print(str(e))
+        return ''
+	
+@app.route('/bikes', methods=['GET'])
+def get_bikes():  # Get bike station status from relay bikes api
+    try:
+        get_db()
+        # Get bike station status from relay bikes api
+        url = 'https://relaybikeshare.socialbicycles.com/opendata/station_status.json'
+        response = requests.get(url).json()
+        response = response['data']['stations']  # only use station info
+        stations = []
+
+        # Get Static Bike station info such as location from database
+        results = g.sql_db.query_dict_return('SELECT * FROM BikeStation', None)
+
+        # Combine with station status info from api request
+        for station in response:
+            id = station['station_id']
+            row = results.get(id, None)  # Get matching row from database
+
+            # If station doesn't exist in db
+            if row is None:
+                continue
+
+            # Format all the information we want to return
+            stationInfo = {
+                "station_id": id, 
+                "name": row[1], 
+                "lat": row[2], "lon": row[3],
+                "num_bikes_available": station['num_bikes_available'], 
+                "num_bikes_disabled": station['num_bikes_disabled'],
+                "num_docks_available": station['num_docks_available'], 
+                "is_installed": station['is_installed'],
+                "is_renting": station['is_renting'], 
+                "is_returning": station['is_returning']
+            }
+            stations.append(stationInfo)
+
+            # Inserts all the bike stations into the database
+            # g.sql_db.query_no_return('INSERT INTO BikeStation (StationID, StationName, Latitude, Longitude) VALUES ( ? , ?, ?, ?);',
+                                     #(station['station_id'], station['name'], station['lat'], station['lon']))
+
+            # Statement to Delete Bikes that are out of the area we want to show
+            # can also check on insert but this shows bounding box
+            # DELETE FROM BikeStation WHERE Latitude < 33.75744 OR Latitude > 33.795217 OR Longitude < -84.418489 OR Longitude > -84.368278;
+
+        return json.dumps(stations)
+    except Exception as e:
+        print(str(e))
+        return ''
+
 
 if __name__ == '__main__':
   app.run(host='localhost', port=8080, debug=True)

@@ -2,10 +2,15 @@ from flask import Flask, request, g
 import json
 import polyline
 import requests
+import sys
 from db import db
 
 app = Flask(__name__)
-app.config.from_pyfile('config.ini')
+try:
+    app.config.from_pyfile('config.ini')
+except Exception as e:
+    print("Error: could not import config.ini.\nPlease make sure to create the config.ini file based on the example or download from google drive.")
+    sys.exit()
 mapbox_key = app.config['MAPBOX_APIKEY']
 routeTags = {'blue': 'blue', 'express': 'tech', 'green': 'green',
              'midnight': 'night', 'red': 'red', 'trolley': 'trolley'}

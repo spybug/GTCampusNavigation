@@ -62,9 +62,7 @@ def get_buses():  # calls gt buses vehicles method (json version)
     route = routeTags.get(request.args.get('route'), None)
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/vehicles'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
-    }
+    headers = {'User-Agent': 'GT Nav'}
 
     response = requests.get(url, headers=headers).json()
 
@@ -91,9 +89,7 @@ def get_routes():  # calls gt buses routes method (json version)
     routeTag = routeTags.get(request.args.get('route'), None)
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
-    }
+    headers = {'User-Agent': 'GT Nav'}
 
     response = requests.get(url, headers=headers).json()
 
@@ -160,9 +156,7 @@ def get_routes():  # calls gt buses routes method (json version)
 def add_busStops():  # Calls gt buses route method to get all route information
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
-    headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
-    }
+    headers = {'User-Agent': 'GT Nav'}
 
     try:
         get_db()

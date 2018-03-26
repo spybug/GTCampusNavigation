@@ -5,9 +5,11 @@ import requests
 from db import db
 
 app = Flask(__name__)
-key = "***REMOVED***"
+app.config.from_pyfile('config.ini')
+mapbox_key = app.config['MAPBOX_APIKEY']
 routeTags = {'blue': 'blue', 'express': 'tech', 'green': 'green',
              'midnight': 'night', 'red': 'red', 'trolley': 'trolley'}
+
 
 @app.route('/')
 def get_homepage():
@@ -16,8 +18,12 @@ def get_homepage():
 
 def get_db():
     if not hasattr(g, 'sql_db'):
-        g.sql_db = db()
+        g.sql_db = db(app.config['DB_SERVER'],
+                      app.config['DB_DATABASE'],
+                      app.config['DB_USERNAME'],
+                      app.config['DB_PASSWORD'])
     return g.sql_db
+
 
 @app.teardown_appcontext
 def close_db(error):
@@ -26,6 +32,7 @@ def close_db(error):
         if error is None:
             g.sql_db.commit()
         g.sql_db.close()
+
 
 # Get Directions from origin to destination using mode of travel from Mapbox API
 @app.route('/directions', methods=['GET'])
@@ -39,9 +46,10 @@ def get_directions():
 
     # Make request to mapbox
     url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin,
-                                                                                                      destination, key)
+                                                                                                      destination, mapbox_key)
     response = requests.get(url).content
     return response
+
 
 # Get all current bus information (id, location, direction, etc) for a specific route
 @app.route('/buses', methods=['GET'])
@@ -70,6 +78,7 @@ def get_buses():  # calls gt buses vehicles method (json version)
 
     result = vehicleIDs
     return json.dumps(result)
+
 
 # Get bus route geometry as an encoded polyline for a specific route from gt buses
 @app.route('/routes', methods=['GET'])
@@ -140,6 +149,7 @@ def get_routes():  # calls gt buses routes method (json version)
 
     return json.dumps(json_result)
 
+
 # Adds all bus stops to the database (given that there aren't in there already)
 @app.route('/addBusStops', methods=['GET'])
 def add_busStops():  # Calls gt buses route method to get all route information
@@ -178,6 +188,7 @@ def add_busStops():  # Calls gt buses route method to get all route information
     except Exception as e:
         print(str(e))
         return ''
+
 
 # Get bus stops for a specific route from database
 @app.route('/stops', methods = ['GET'])

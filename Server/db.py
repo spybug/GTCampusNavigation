@@ -1,15 +1,11 @@
 import pyodbc
 
-class db:
 
+class db:
     connection = None
     cursor = None
 
-    def __init__(self):
-        server = '***REMOVED***'
-        database = '***REMOVED***'
-        username = '***REMOVED***'
-        password = '***REMOVED***'
+    def __init__(self, server, database, username, password):
         driver = '{ODBC Driver 13 for SQL Server}'
 
         self.connection = None

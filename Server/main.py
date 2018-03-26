@@ -2,12 +2,19 @@ from flask import Flask, request, g
 import json
 import polyline
 import requests
+import sys
 from db import db
 
 app = Flask(__name__)
-key = "pk.eyJ1IjoiZ3RjYW1wdXNuYXZpZ2F0aW9ud2ViIiwiYSI6ImNqZGV0amIxZjBpZWMyd21pYm5keWZqdHYifQ.Cm3ZNFq8KFh9UB7NEzHJ2g"
+try:
+    app.config.from_pyfile('config.ini')
+except Exception as e:
+    print("Error: could not import config.ini.\nPlease make sure to create the config.ini file based on the example or download from google drive.")
+    sys.exit()
+mapbox_key = app.config['MAPBOX_APIKEY']
 routeTags = {'blue': 'blue', 'express': 'tech', 'green': 'green',
 			'midnight': 'night', 'red': 'red', 'trolley': 'trolley'}
+
 
 @app.route('/')
 def get_homepage():
@@ -15,8 +22,12 @@ def get_homepage():
 
 def get_db():
     if not hasattr(g, 'sql_db'):
-        g.sql_db = db()
+        g.sql_db = db(app.config['DB_SERVER'],
+                      app.config['DB_DATABASE'],
+                      app.config['DB_USERNAME'],
+                      app.config['DB_PASSWORD'])
     return g.sql_db
+
 
 @app.teardown_appcontext
 def close_db(error):
@@ -26,6 +37,7 @@ def close_db(error):
             g.sql_db.commit()
         g.sql_db.close()
 
+<<<<<<< HEAD
 # Returns directions from an origin to a destination.
 # Mode: The method of travel. 'walking', 'cycling', and 'driving' are straightforward shots to the destination
 #	'bus' will walk the user to the nearest bus stop, use GTBus API to route to a second bus stop, and then 
@@ -121,6 +133,27 @@ def get_directions():
 #	trolley
 #	night	- Midnight Rambler
 #	tech	- T/S Express
+=======
+
+# Get Directions from origin to destination using mode of travel from Mapbox API
+@app.route('/directions', methods=['GET'])
+def get_directions():
+    origin = request.args.get('origin')
+    destination = request.args.get('destination')
+    mode = request.args.get('mode')
+
+    if not (origin and destination and mode):  # if not all parameters are supplied
+        return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
+
+    # Make request to mapbox
+    url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin,
+                                                                                                      destination, mapbox_key)
+    response = requests.get(url).content
+    return response
+
+
+# Get all current bus information (id, location, direction, etc) for a specific route
+>>>>>>> ac5711b3a7ae3ff3155a0f64827648863541cbd0
 @app.route('/buses', methods=['GET'])
 def get_buses():  # calls gt buses vehicles method (json version)
     route = routeTags.get(request.args.get('route'), None)
@@ -147,6 +180,7 @@ def get_buses():  # calls gt buses vehicles method (json version)
 
     result = vehicleIDs
     return json.dumps(result)
+
 
 # Get bus route geometry as an encoded polyline for a specific route from gt buses
 @app.route('/routes', methods=['GET'])
@@ -217,6 +251,7 @@ def get_routes():  # calls gt buses routes method (json version)
 
     return json.dumps(json_result)
 
+
 # Adds all bus stops to the database (given that there aren't in there already)
 @app.route('/addBusStops', methods=['GET'])
 def add_busStops():  # Calls gt buses route method to get all route information
@@ -255,6 +290,7 @@ def add_busStops():  # Calls gt buses route method to get all route information
     except Exception as e:
         print(str(e))
         return ''
+
 
 # Get bus stops for a specific route from database
 @app.route('/stops', methods = ['GET'])

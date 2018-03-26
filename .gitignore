@@ -57,3 +57,6 @@ freeline_project_description.json
 
 #Python build files
 *.pyc
+
+# Server config file sensitive info
+/Server/config.ini

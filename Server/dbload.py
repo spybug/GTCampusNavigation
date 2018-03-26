@@ -56,4 +56,3 @@ for latLonPath in latLonPaths:
 encodedPolyline = polyline.encode(notencodedPolyline, 5)
 print encodedPolyline
 #return encodedPolyline
-

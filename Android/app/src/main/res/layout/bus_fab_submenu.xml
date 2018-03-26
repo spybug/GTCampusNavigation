@@ -1,0 +1,290 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout
+    android:id="@+id/fabFrame"
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:layout_alignParentBottom="true"
+    android:layout_marginTop="?attr/actionBarSize"
+    android:clipChildren="false"
+    android:clipToPadding="false"
+    android:orientation="vertical"
+    android:paddingBottom="@dimen/fabBottomPadding"
+    android:paddingLeft="@dimen/activity_horizontal_margin"
+    android:paddingRight="@dimen/activity_horizontal_margin"
+    android:paddingTop="@dimen/activity_vertical_margin">
+
+    <Space
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"/>
+
+    <LinearLayout
+        android:id="@+id/layoutFabBlue"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <android.support.v7.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/cardview_light_background"
+            app:cardCornerRadius="@dimen/cardCornerRadius"
+            app:cardElevation="@dimen/cardElevation"
+            app:cardUseCompatPadding="true">
+
+            <TextView
+                android:id="@+id/cvtBlue"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/cardview_vertical_padding"
+                android:paddingLeft="@dimen/cardview_horizontal_padding"
+                android:paddingRight="@dimen/cardview_horizontal_padding"
+                android:paddingTop="@dimen/cardview_vertical_padding"
+                android:text="@string/blue_route"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textStyle="bold"/>
+        </android.support.v7.widget.CardView>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabBlue"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_black"
+            app:backgroundTint="@color/blueRoute"
+            app:fabSize="mini"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutFabRed"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <android.support.v7.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/cardview_light_background"
+            app:cardCornerRadius="@dimen/cardCornerRadius"
+            app:cardElevation="@dimen/cardElevation"
+            app:cardUseCompatPadding="true">
+
+            <TextView
+                android:id="@+id/cvtRed"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/cardview_vertical_padding"
+                android:paddingLeft="@dimen/cardview_horizontal_padding"
+                android:paddingRight="@dimen/cardview_horizontal_padding"
+                android:paddingTop="@dimen/cardview_vertical_padding"
+                android:text="@string/red_route"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textStyle="bold"/>
+        </android.support.v7.widget.CardView>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabRed"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_black"
+            app:backgroundTint="@color/redRoute"
+            app:fabSize="mini"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutFabGreen"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <android.support.v7.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/cardview_light_background"
+            app:cardCornerRadius="@dimen/cardCornerRadius"
+            app:cardElevation="@dimen/cardElevation"
+            app:cardUseCompatPadding="true">
+
+            <TextView
+                android:id="@+id/cvtGreen"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/cardview_vertical_padding"
+                android:paddingLeft="@dimen/cardview_horizontal_padding"
+                android:paddingRight="@dimen/cardview_horizontal_padding"
+                android:paddingTop="@dimen/cardview_vertical_padding"
+                android:text="@string/green_route"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textStyle="bold"/>
+        </android.support.v7.widget.CardView>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabGreen"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_black"
+            app:backgroundTint="@color/greenRoute"
+            app:fabSize="mini"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutFabTrolley"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <android.support.v7.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/cardview_light_background"
+            app:cardCornerRadius="@dimen/cardCornerRadius"
+            app:cardElevation="@dimen/cardElevation"
+            app:cardUseCompatPadding="true">
+
+            <TextView
+                android:id="@+id/cvtTrolley"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/cardview_vertical_padding"
+                android:paddingLeft="@dimen/cardview_horizontal_padding"
+                android:paddingRight="@dimen/cardview_horizontal_padding"
+                android:paddingTop="@dimen/cardview_vertical_padding"
+                android:text="@string/tech_trolley"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textStyle="bold"/>
+        </android.support.v7.widget.CardView>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabTrolley"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_black"
+            app:backgroundTint="@color/techTrolley"
+            app:fabSize="mini"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutFabMidnight"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <android.support.v7.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/cardview_light_background"
+            app:cardCornerRadius="@dimen/cardCornerRadius"
+            app:cardElevation="@dimen/cardElevation"
+            app:cardUseCompatPadding="true">
+
+            <TextView
+                android:id="@+id/cvtMidnight"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/cardview_vertical_padding"
+                android:paddingLeft="@dimen/cardview_horizontal_padding"
+                android:paddingRight="@dimen/cardview_horizontal_padding"
+                android:paddingTop="@dimen/cardview_vertical_padding"
+                android:text="@string/midnight_rambler"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textStyle="bold"/>
+        </android.support.v7.widget.CardView>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabMidnight"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_black"
+            app:backgroundTint="@color/midnightRambler"
+            app:fabSize="mini"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutFabExpress"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="8dp"
+        android:layout_marginEnd="8dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <android.support.v7.widget.CardView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            app:cardBackgroundColor="@color/cardview_light_background"
+            app:cardCornerRadius="@dimen/cardCornerRadius"
+            app:cardElevation="@dimen/cardElevation"
+            app:cardUseCompatPadding="true">
+
+            <TextView
+                android:id="@+id/cvtExpress"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:paddingBottom="@dimen/cardview_vertical_padding"
+                android:paddingLeft="@dimen/cardview_horizontal_padding"
+                android:paddingRight="@dimen/cardview_horizontal_padding"
+                android:paddingTop="@dimen/cardview_vertical_padding"
+                android:text="@string/tech_express"
+                android:textAppearance="?android:attr/textAppearanceSmall"
+                android:textStyle="bold"/>
+        </android.support.v7.widget.CardView>
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabExpress"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@drawable/ic_bus_black"
+            app:backgroundTint="@color/techExpress"
+            app:fabSize="mini"/>
+
+    </LinearLayout>
+
+    <LinearLayout
+        android:id="@+id/layoutFabSelect"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="bottom|end"
+        android:layout_marginBottom="0dp"
+        android:gravity="center_vertical"
+        android:orientation="horizontal">
+
+        <android.support.design.widget.FloatingActionButton
+            android:id="@+id/fabSelect"
+            android:layout_width="85dp"
+            android:layout_height="match_parent"
+            android:layout_gravity="bottom|end"
+            android:padding="0dp"
+            android:src="@drawable/ic_bus_black"
+            app:backgroundTint="@android:color/white"
+            app:fabSize="normal"/>
+
+    </LinearLayout>
+
+</LinearLayout>

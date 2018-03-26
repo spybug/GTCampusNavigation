@@ -5,7 +5,7 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="com.spybug.gtnav.MainMapOverlayFragment">
+    tools:context="com.spybug.gtnav.fragments.MainMapOverlayFragment">
 
 
     <LinearLayout
@@ -56,7 +56,7 @@
         android:layout_height="50dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
-        android:layout_marginBottom="20dp"
+        android:layout_marginBottom="@dimen/fabBottomPadding"
         android:layout_marginEnd="15dp"
         android:background="@drawable/round_report_button"
         android:padding="11dp"

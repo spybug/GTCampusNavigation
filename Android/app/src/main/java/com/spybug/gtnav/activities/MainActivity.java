@@ -1,4 +1,4 @@
-package com.spybug.gtnav;
+package com.spybug.gtnav.activities;
 
 import android.content.Context;
 import android.location.Location;
@@ -11,7 +11,6 @@ import android.support.design.widget.NavigationView;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.support.v7.app.AppCompatActivity;
-import android.view.Menu;
 import android.view.MenuItem;
 import android.widget.Toast;
 
@@ -32,13 +31,26 @@ import com.mapbox.services.android.telemetry.location.LocationEnginePriority;
 import com.mapbox.services.android.telemetry.location.LostLocationEngine;
 import com.mapbox.services.android.telemetry.permissions.PermissionsListener;
 import com.mapbox.services.android.telemetry.permissions.PermissionsManager;
+import com.spybug.gtnav.R;
+import com.spybug.gtnav.fragments.BikesOverlayFragment;
+import com.spybug.gtnav.fragments.BottomNavbarFragment;
+import com.spybug.gtnav.fragments.BusMapOverlayFragment;
+import com.spybug.gtnav.fragments.DirectionsMenuFragment;
+import com.spybug.gtnav.fragments.MainMapOverlayFragment;
+import com.spybug.gtnav.fragments.MapFragment;
+import com.spybug.gtnav.fragments.ScheduleFragment;
+import com.spybug.gtnav.models.BikeStation;
+import com.spybug.gtnav.models.Bus;
+import com.spybug.gtnav.models.BusStop;
 
 import java.util.List;
 
-import static com.spybug.gtnav.HelperUtil.convertDpToPixel;
+import static com.spybug.gtnav.utils.HelperUtil.convertDpToPixel;
 
 public class MainActivity extends AppCompatActivity
-        implements NavigationView.OnNavigationItemSelectedListener, LocationEngineListener, PermissionsListener, Communicator {
+        implements NavigationView.OnNavigationItemSelectedListener, LocationEngineListener, PermissionsListener {
+
+    private final static String ROOT_TAG = "root_fragment";
 
     private MapboxMap map;
     private MapFragment mapFragment;
@@ -46,6 +58,14 @@ public class MainActivity extends AppCompatActivity
     private PermissionsManager permissionsManager;
     private LocationLayerPlugin locationPlugin;
     private LocationEngine locationEngine;
+    private BottomNavbarFragment bottomBarFragment;
+    private enum State {
+        MAIN,
+        DIRECTIONS,
+        BUSES,
+        BIKES
+    }
+
     private State currentState;
 
     private static final LatLngBounds GT_BOUNDS = new LatLngBounds.Builder()
@@ -58,10 +78,14 @@ public class MainActivity extends AppCompatActivity
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        currentState = State.MAIN;
+        currentState = null;
+
+        navMenu = findViewById(R.id.nav_view);
+        navMenu.setNavigationItemSelectedListener(this);
 
         if (savedInstanceState == null) {
-            final FragmentTransaction transaction = getSupportFragmentManager().beginTransaction();
+            FragmentManager fragmentManager = getSupportFragmentManager();
+            final FragmentTransaction transaction = fragmentManager.beginTransaction();
 
             LatLng GT = new LatLng(33.7756, -84.3963);
 
@@ -73,13 +97,14 @@ public class MainActivity extends AppCompatActivity
                     .build());
 
             mapFragment = MapFragment.newInstance(options);
-            Fragment bottomBarFragment = new BottomNavbarFragment();
-            Fragment mainMapOverlayFragment = new MainMapOverlayFragment();
+            bottomBarFragment = new BottomNavbarFragment();
 
             transaction.add(R.id.map_frame, mapFragment, "com.mapbox.map");
             transaction.add(R.id.bottom_bar_frame, bottomBarFragment, "com.gtnav.bottomBar");
-            transaction.add(R.id.map_overlay_frame, mainMapOverlayFragment, "com.gtnav.mainMapOverlay");
             transaction.commit();
+            fragmentManager.executePendingTransactions();
+
+            openMainMapFragment();
         } else {
             mapFragment = (MapFragment) getSupportFragmentManager().findFragmentByTag("com.mapbox.map");
         }
@@ -102,19 +127,21 @@ public class MainActivity extends AppCompatActivity
             }
         });
 
-        navMenu = findViewById(R.id.nav_view);
-        navMenu.setNavigationItemSelectedListener(this);
+
     }
 
-
-    //TODO: Currently memory leak exists with busmapoverlay fragment staying alive because of fragment manager backstack, so it keeps requesting bus update
     @Override
     public void onBackPressed() {
         DrawerLayout drawer = findViewById(R.id.drawer_layout);
         if (drawer.isDrawerOpen(GravityCompat.START)) {
             drawer.closeDrawer(GravityCompat.START);
         } else {
-            super.onBackPressed();
+            if (currentState == State.MAIN) {
+                supportFinishAfterTransition(); //Exit app if on main page
+            }
+            else {
+                openMainMapFragment(); //Go back to main map fragment if not already there
+            }
         }
     }
 
@@ -126,12 +153,14 @@ public class MainActivity extends AppCompatActivity
         int id = item.getItemId();
         Fragment newFragment = null;
 
-        if (id == R.id.nav_directions) {
-            newFragment = new DirectionsMenuFragment();
+        if (id == R.id.nav_map) {
+            openMainMapFragment();
+        } else if (id == R.id.nav_directions) {
+            openDirectionsFragment();
         } else if (id == R.id.nav_buses) {
-            newFragment = new ScheduleFragment();
+            openBusesFragment();
         } else if (id == R.id.nav_bikes) {
-            newFragment = new ScheduleFragment();
+            openBikesFragment();
         } else if (id == R.id.nav_schedule) {
             newFragment = new ScheduleFragment();
         } else if (id == R.id.nav_settings) {
@@ -144,112 +173,102 @@ public class MainActivity extends AppCompatActivity
             newFragment = new ScheduleFragment();
         }
 
-        try {
-            if (currentState == State.MAIN) {
-                FragmentManager fragmentManager = getSupportFragmentManager();
-                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-
-                Fragment overlayFragment = fragmentManager.findFragmentById(R.id.map_overlay_frame);
-                Fragment menuFragment = fragmentManager.findFragmentById(R.id.menu_frame);
-                fragmentTransaction.remove(overlayFragment);
-                fragmentTransaction.remove(menuFragment);
-                fragmentTransaction.add(R.id.menu_frame, newFragment).addToBackStack(null);
-                fragmentTransaction.commit();
-            }
-        }
-        catch (Exception e) {
-            e.printStackTrace();
-        }
+//        try {
+//            if (currentState == State.MAIN) {
+//                FragmentManager fragmentManager = getSupportFragmentManager();
+//                FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
+//
+//                Fragment overlayFragment = fragmentManager.findFragmentById(R.id.map_overlay_frame);
+//                Fragment menuFragment = fragmentManager.findFragmentById(R.id.menu_frame);
+//                fragmentTransaction.remove(overlayFragment);
+//                fragmentTransaction.remove(menuFragment);
+//                fragmentTransaction.add(R.id.menu_frame, newFragment).addToBackStack(null);
+//                fragmentTransaction.commit();
+//            }
+//        }
+//        catch (Exception e) {
+//            e.printStackTrace();
+//        }
 
         closeDrawer();
         item.setChecked(true);
         return true;
     }
 
-    public void resetMainState() {
-        Menu menu = navMenu.getMenu();
-        if (navMenu != null) {
-            for (int i = 0; i < menu.size(); i++) {
-                MenuItem item = menu.getItem(i);
-                if (item.isChecked()) {
-                    item.setChecked(false);
-                }
-            }
-        }
 
-        FragmentManager fragmentManager = getSupportFragmentManager();
-        FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-        Fragment menuFragment = fragmentManager.findFragmentById(R.id.menu_frame);
-        if (menuFragment != null) {
-            fragmentTransaction.remove(menuFragment);
-        }
+    public void openMainMapFragment() {
+        if (currentState != State.MAIN) {
+            openFragmentPage(null, new MainMapOverlayFragment());
 
-        mapFragment.clearMap();
-        currentState = State.MAIN;
+            currentState = State.MAIN;
+            navMenu.setCheckedItem(R.id.nav_map);
+            bottomBarFragment.highlightMainMap();
+        }
     }
 
-    public void openDirectionsMenuFragment() {
+    public void openDirectionsFragment() {
         if (currentState != State.DIRECTIONS) {
-            Fragment fragment = new DirectionsMenuFragment();
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            //Place the directions menu in place of whats there (if anything at all)
-            fragmentTransaction.replace(R.id.menu_frame, fragment);
-            //Remove any map overlays
-            Fragment overlayFragment = fragmentManager.findFragmentById(R.id.map_overlay_frame);
-            fragmentTransaction.remove(overlayFragment);
-            //Add main overlay to back stack
-            if (currentState == State.MAIN) {
-                fragmentTransaction.addToBackStack(null);
-            }
-            fragmentTransaction.commit();
+            openFragmentPage(new DirectionsMenuFragment(), null);
 
-            mapFragment.clearMap();
             currentState = State.DIRECTIONS;
             navMenu.setCheckedItem(R.id.nav_directions);
+            bottomBarFragment.highlightDirections();
         }
     }
 
     public void openBusesFragment() {
         if (currentState != State.BUSES) {
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            //Remove any menu fragments on the buses page
-            Fragment menu_fragment = fragmentManager.findFragmentById(R.id.menu_frame);
-            if (menu_fragment != null) {
-                fragmentTransaction.remove(menu_fragment);
-            }
-            //Place the buses map overlay in place of whats there (if anything at all)
-            Fragment fragment = new BusMapOverlayFragment();
-            fragmentTransaction.replace(R.id.map_overlay_frame, fragment);
-            //Place the main map overlay on the back stack
-            if (currentState == State.MAIN) {
-                fragmentTransaction.addToBackStack(null);
-            }
-            fragmentTransaction.commit();
+            openFragmentPage(null, new BusMapOverlayFragment());
 
-            mapFragment.clearMap();
             currentState = State.BUSES;
             navMenu.setCheckedItem(R.id.nav_buses);
+            bottomBarFragment.highlightBuses();
         }
     }
 
     public void openBikesFragment() {
         if (currentState != State.BIKES) {
-            Fragment fragment = new ScheduleFragment();
-            FragmentManager fragmentManager = getSupportFragmentManager();
-            FragmentTransaction fragmentTransaction = fragmentManager.beginTransaction();
-            fragmentTransaction.replace(R.id.menu_frame, fragment);
-            if (currentState == State.MAIN) {
-                Fragment overlayFragment = fragmentManager.findFragmentById(R.id.map_overlay_frame);
-                fragmentTransaction.remove(overlayFragment);
-                fragmentTransaction.addToBackStack(null);
-            }
-            fragmentTransaction.commit();
-            currentState = State.BIKES;
+            openFragmentPage(null, new BikesOverlayFragment());
 
+            currentState = State.BIKES;
             navMenu.setCheckedItem(R.id.nav_bikes);
+            bottomBarFragment.highlightBikes();
         }
+    }
+
+    // Opens the fragments passed in after popping whatever is on the back stack
+    public void openFragmentPage(Fragment menuFragment, Fragment overlayFragment) {
+        FragmentManager fragmentManager = getSupportFragmentManager();
+        fragmentManager.popBackStack(ROOT_TAG, FragmentManager.POP_BACK_STACK_INCLUSIVE); //Pops previous items on Fragment back stack
+
+        FragmentTransaction transaction = fragmentManager.beginTransaction();
+        //Place overlay fragment if not null
+        if (overlayFragment != null) {
+            transaction.replace(R.id.map_overlay_frame, overlayFragment);
+        }
+        //Remove previous overlayFragment if it exists
+        else {
+            Fragment prevOverlayFragment = fragmentManager.findFragmentById(R.id.map_overlay_frame);
+            if (prevOverlayFragment != null) {
+                transaction.remove(prevOverlayFragment);
+            }
+        }
+        //Place menu fragment if not null
+        if (menuFragment != null) {
+            transaction.replace(R.id.menu_frame, menuFragment);
+        }
+        //Remove previous menu fragment if it exists
+        else {
+            Fragment prevMenuFragment = fragmentManager.findFragmentById(R.id.menu_frame);
+            if (prevMenuFragment != null) {
+                transaction.remove(prevMenuFragment);
+            }
+        }
+
+        transaction.addToBackStack(ROOT_TAG);
+        transaction.commit();
+
+        mapFragment.clearMap();
     }
 
     public void openDrawer() {
@@ -291,16 +310,18 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    protected Location getLastLocation() {
+    public Location getLastLocation() {
         if (locationPlugin != null) {
             return locationPlugin.getLastKnownLocation();
         }
         return null;
     }
 
-    protected void setCameraPosition(Location location) {
-        map.animateCamera(CameraUpdateFactory.newLatLngZoom(
-                new LatLng(location.getLatitude(), location.getLongitude()), 16));
+    public void setCameraPosition(Location location) {
+        if (GT_BOUNDS.contains(new LatLng(location.getLatitude(), location.getLongitude()))) {
+            map.animateCamera(CameraUpdateFactory.newLatLngZoom(
+                    new LatLng(location.getLatitude(), location.getLongitude()), 16));
+        }
     }
 
     @Override
@@ -366,18 +387,27 @@ public class MainActivity extends AppCompatActivity
         }
     }
 
-    @Override
     public void passRouteToMap(LatLng[] points) {
         mapFragment.drawDirectionsRoute(points);
     }
 
-    @Override
-    public void passBusRouteToMap(List<LatLng> points, String routeColor) {
+    public void passBusRouteToMap(List<List<LatLng>> points, String routeColor) {
         mapFragment.drawBusesRoute(points, routeColor);
     }
 
-    @Override
-    public void passBusLocationsToMap(List<LatLng> points, String routeColor) {
+    public void passBusLocationsToMap(List<Bus> points, String routeColor) {
         mapFragment.drawBusLocations(points, routeColor);
+    }
+
+    public void passBikeStationsToMap(List<BikeStation> bikeStations) {
+        mapFragment.drawBikeStations(bikeStations);
+    }
+
+    public void passBusStopsToMap(List<BusStop> busStops, String routeColor) {
+        mapFragment.drawBusStops(busStops, routeColor);
+    }
+
+    public void clearBuses() {
+        mapFragment.clearBusesAndStops();
     }
 }

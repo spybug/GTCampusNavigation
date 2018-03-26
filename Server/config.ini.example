@@ -1,0 +1,9 @@
+# Copy to a config.ini and place in actual values.
+# Can be gotten from google drive folder.
+
+DB_SERVER = 'server url'
+DB_DATABASE = 'db name'
+DB_USERNAME = 'db username'
+DB_PASSWORD = 'db password'
+
+MAPBOX_APIKEY = 'mapbox api key'

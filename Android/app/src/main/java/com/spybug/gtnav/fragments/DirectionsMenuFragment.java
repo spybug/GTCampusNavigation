@@ -1,4 +1,4 @@
-package com.spybug.gtnav;
+package com.spybug.gtnav.fragments;
 
 import android.content.Context;
 import android.graphics.Color;
@@ -20,7 +20,10 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.mapbox.mapboxsdk.geometry.LatLng;
-import com.mapbox.services.android.telemetry.location.LocationEngine;
+import com.spybug.gtnav.utils.DirectionsServerRequest;
+import com.spybug.gtnav.activities.MainActivity;
+import com.spybug.gtnav.interfaces.OnEventListener;
+import com.spybug.gtnav.R;
 
 
 /**
@@ -99,7 +102,10 @@ public class DirectionsMenuFragment extends Fragment {
         v.findViewById(R.id.directions_back_button).setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View view) {
-                ((MainActivity) getActivity()).onBackPressed();
+                MainActivity activity = (MainActivity) getActivity();
+                if (activity != null) {
+                    activity.onBackPressed();
+                }
             }
         });
 
@@ -161,7 +167,9 @@ public class DirectionsMenuFragment extends Fragment {
 
                     //hide the keyboard
                     InputMethodManager imm = (InputMethodManager) myView.getContext().getSystemService(Context.INPUT_METHOD_SERVICE);
-                    imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    if (imm != null) {
+                        imm.hideSoftInputFromWindow(v.getWindowToken(), 0);
+                    }
 
                     if (!directionsRequested) {
                         makeDirectionsRequest();
@@ -196,31 +204,36 @@ public class DirectionsMenuFragment extends Fragment {
     }
 
     private void makeDirectionsRequest() {
-        Location location = ((MainActivity) getActivity()).getLastLocation();
+        MainActivity activity = (MainActivity) getActivity();
+        if (activity != null) {
+            Location location = activity.getLastLocation();
 
-        if (endLocation != null && startLocation != null) {
-            try {
-                DirectionsServerRequest req = new DirectionsServerRequest(v.getContext(), new OnEventListener<LatLng[], String>() {
-                    @Override
-                    public void onSuccess(LatLng[] points) {
-                        ((Communicator) getActivity()).passRouteToMap(points);
-                    }
+            if (endLocation != null && startLocation != null) {
+                try {
+                    DirectionsServerRequest req = new DirectionsServerRequest(v.getContext(), new OnEventListener<LatLng[], String>() {
+                        @Override
+                        public void onSuccess(LatLng[] points) {
+                            MainActivity communicator = (MainActivity) getActivity();
+                            if (communicator != null) {
+                                communicator.passRouteToMap(points);
+                            }
+                        }
 
-                    @Override
-                    public void onFailure(String message) {
-                        Toast.makeText(v.getContext(), message, Toast.LENGTH_LONG).show();
-                    }
-                });
-                req.execute(startLocation.getText().toString(),
-                        endLocation.getText().toString(),
-                        curSelectedMode.toString(),
-                        location,
-                        getString(R.string.mapbox_key));
+                        @Override
+                        public void onFailure(String message) {
+                            Toast.makeText(v.getContext(), message, Toast.LENGTH_LONG).show();
+                        }
+                    });
+                    req.execute(startLocation.getText().toString(),
+                            endLocation.getText().toString(),
+                            curSelectedMode.toString(),
+                            location,
+                            getString(R.string.mapbox_key));
 
-                directionsRequested = true;
-            }
-            catch(Exception e) {
-                e.printStackTrace();
+                    directionsRequested = true;
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
             }
         }
     }
@@ -270,7 +283,11 @@ public class DirectionsMenuFragment extends Fragment {
     }
 
     private void checkLocation() {
-        Location lastLocation = ((MainActivity) getActivity()).getLastLocation();
+        MainActivity activity = (MainActivity) getActivity();
+        Location lastLocation = null;
+        if (activity != null) {
+            lastLocation = activity.getLastLocation();
+        }
 
         if (lastLocation != null) {
             startLocation.setText(getString(R.string.current_location));

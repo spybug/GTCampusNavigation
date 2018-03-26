@@ -1,4 +1,4 @@
-package com.spybug.gtnav;
+package com.spybug.gtnav.fragments;
 
 import android.content.Context;
 import android.net.Uri;
@@ -8,6 +8,9 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.ImageButton;
+
+import com.spybug.gtnav.activities.MainActivity;
+import com.spybug.gtnav.R;
 
 
 /**
@@ -51,8 +54,7 @@ public class MainMapOverlayFragment extends Fragment {
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
         View v = inflater.inflate(R.layout.fragment_main_map_overlay, container, false);
-
-        ((MainActivity) getActivity()).resetMainState();
+        
         menuButton = v.findViewById(R.id.search_bar_menubutton);
         menuButton.setOnClickListener(new View.OnClickListener() {
             @Override

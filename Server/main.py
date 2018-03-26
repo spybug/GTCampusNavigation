@@ -37,7 +37,6 @@ def close_db(error):
             g.sql_db.commit()
         g.sql_db.close()
 
-<<<<<<< HEAD
 # Returns directions from an origin to a destination.
 # Mode: The method of travel. 'walking', 'cycling', and 'driving' are straightforward shots to the destination
 #	'bus' will walk the user to the nearest bus stop, use GTBus API to route to a second bus stop, and then 
@@ -133,27 +132,6 @@ def get_directions():
 #	trolley
 #	night	- Midnight Rambler
 #	tech	- T/S Express
-=======
-
-# Get Directions from origin to destination using mode of travel from Mapbox API
-@app.route('/directions', methods=['GET'])
-def get_directions():
-    origin = request.args.get('origin')
-    destination = request.args.get('destination')
-    mode = request.args.get('mode')
-
-    if not (origin and destination and mode):  # if not all parameters are supplied
-        return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
-
-    # Make request to mapbox
-    url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin,
-                                                                                                      destination, mapbox_key)
-    response = requests.get(url).content
-    return response
-
-
-# Get all current bus information (id, location, direction, etc) for a specific route
->>>>>>> ac5711b3a7ae3ff3155a0f64827648863541cbd0
 @app.route('/buses', methods=['GET'])
 def get_buses():  # calls gt buses vehicles method (json version)
     route = routeTags.get(request.args.get('route'), None)

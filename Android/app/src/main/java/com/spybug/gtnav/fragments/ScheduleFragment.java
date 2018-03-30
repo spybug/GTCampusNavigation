@@ -3,10 +3,21 @@ package com.spybug.gtnav.fragments;
 import android.content.Context;
 import android.net.Uri;
 import android.os.Bundle;
+import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
+import android.widget.ListView;
+import android.widget.Toast;
+
+import com.spybug.gtnav.R;
+import com.spybug.gtnav.models.ScheduleEvent;
+
+import java.util.ArrayList;
+import java.util.List;
 
 import com.spybug.gtnav.R;
 
@@ -31,6 +42,9 @@ public class ScheduleFragment extends Fragment {
 
     private OnFragmentInteractionListener mListener;
 
+    private ListView scheduleView;
+    private List<ScheduleEvent> eventList;
+
     public ScheduleFragment() {
         // Required empty public constructor
     }
@@ -54,19 +68,43 @@ public class ScheduleFragment extends Fragment {
     }
 
     @Override
-    public void onCreate(Bundle savedInstanceState) {
-        super.onCreate(savedInstanceState);
-        if (getArguments() != null) {
-            mParam1 = getArguments().getString(ARG_PARAM1);
-            mParam2 = getArguments().getString(ARG_PARAM2);
-        }
-    }
-
-    @Override
     public View onCreateView(LayoutInflater inflater, ViewGroup container,
                              Bundle savedInstanceState) {
-        // Inflate the layout for this fragment
-        return inflater.inflate(R.layout.fragment_schedule, container, false);
+        View v = inflater.inflate(R.layout.fragment_schedule, container, false);
+
+        eventList = new ArrayList<>();
+        scheduleView = v.findViewById(R.id.ScheduleListView);
+        FloatingActionButton addFab = v.findViewById(R.id.AddToScheduleFAB);
+
+        ArrayAdapter<ScheduleEvent> listAdapter =
+                new ArrayAdapter<>(v.getContext(), android.R.layout.simple_list_item_1, eventList);
+        scheduleView.setAdapter(listAdapter);
+
+        scheduleView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+            public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+                //TODO
+                Toast.makeText(ScheduleFragment.this.getContext(), "Event Selected", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        addFab.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                eventList.add(addEvent());
+                Toast.makeText(v.getContext(), "Event Added", Toast.LENGTH_LONG).show();
+            }
+        });
+
+        return v;
+    }
+
+    private ScheduleEvent addEvent() {
+        ArrayAdapter<ScheduleEvent> listAdapter =
+                new ArrayAdapter<>(ScheduleFragment.this.getContext(),
+                        android.R.layout.simple_list_item_1, eventList);
+        scheduleView.setAdapter(listAdapter);
+        return null;
     }
 
     // TODO: Rename method, update argument and hook method into UI event
@@ -102,3 +140,4 @@ public class ScheduleFragment extends Fragment {
         void onFragmentInteraction(Uri uri);
     }
 }
+

@@ -176,11 +176,11 @@ def add_busStops():  # Calls gt buses route method to get all route information
                     continue
                 # Insert bus stop into the busStops table if it isn't in there already
                 # Must match lat/long AND RouteName
-                query = 'IF NOT EXISTS (SELECT * FROM BusStop WHERE Latitude = ? AND Longitude = ? AND RouteName = ?)' \
+                query = 'IF NOT EXISTS (SELECT * FROM BusStop WHERE StopTag = ? AND RouteTag = ?)' \
                         'BEGIN INSERT INTO BusStop ' \
-                        '(Latitude, Longitude, StopTitle, RouteName) VALUES (?, ?, ?, ?) END;'
+                        '(Latitude, Longitude, StopTitle, StopTag, RouteTag) VALUES (?, ?, ?, ?, ?) END;'
 
-                g.sql_db.query_no_return(query, (lat, lon, route['tag'], lat, lon, stop['title'], route['tag']))
+                g.sql_db.query_no_return(query, (stop['tag'], route['tag'], lat, lon, stop['title'], stop['tag'], route['tag']))
 
         return 'Successfully added stops'
 
@@ -197,16 +197,40 @@ def get_busStops():
     if routeTag is None:
         return ''
 
+    url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/multiPredictions?'
     try:
         get_db()
-        stops = []
+        staticStops = {}    # Information from database for each stop
+        stopsInfo = []      # Final result object
 
-        results = g.sql_db.query_many('SELECT * FROM BusStop WHERE RouteName = ?', routeTag)
-        for row in results:  # For every bus stop returned, beautify information into json response
-            stopInfo = {'Latitude': row[0], 'Longitude': row[1], 'Title': row[2]}
-            stops.append(stopInfo)
+        # Get static bus stop information from database
+        results = g.sql_db.query_many('SELECT * FROM BusStop WHERE RouteTag = ?', routeTag)
+        for row in results:  # For every bus stop returned store information into dictionary
+            stopTag = row.StopTag
+            staticStops[stopTag] = row
+            url += 'stops=' + routeTag + '|' + stopTag + '&'    # Construct url for predictions
 
-        return json.dumps(stops)
+        #print(url)
+        # Get Predictions for each stop
+        headers = {'User-Agent': 'GT Nav'}
+        response = requests.get(url, headers=headers).json()
+        predictions = response['predictions']
+
+        for stop in predictions:
+            staticInfo = staticStops.get(stop['stopTag'])
+            direction = stop.get('direction', None)  # Returns None if there are no predictions
+
+            # If no prediction for this stop
+            if direction is None:
+                stopInfo = {'Latitude': staticInfo.Latitude, 'Longitude': staticInfo.Longitude, 'Title': staticInfo.StopTitle, 'Prediction': -1}
+                stopsInfo.append(stopInfo)
+            else:
+                # Only get first prediction right now
+                prediction = direction['prediction'][0]
+                stopInfo = {'Latitude': staticInfo.Latitude, 'Longitude': staticInfo.Longitude, 'Title': staticInfo.StopTitle, 'Prediction': prediction['minutes']}
+                stopsInfo.append(stopInfo)
+
+        return json.dumps(stopsInfo)
 
     except Exception as e:
         print(str(e))

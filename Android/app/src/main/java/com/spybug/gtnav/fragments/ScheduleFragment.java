@@ -19,6 +19,8 @@ import com.spybug.gtnav.models.ScheduleEvent;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.spybug.gtnav.R;
+
 
 /**
  * A simple {@link Fragment} subclass.

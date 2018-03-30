@@ -20,7 +20,6 @@ routeTags = {'blue': 'blue', 'express': 'tech', 'green': 'green',
 def get_homepage():
     return "Testing- This page is the default home page. Probably change to have a readme."
 
-
 def get_db():
     if not hasattr(g, 'sql_db'):
         g.sql_db = db(app.config['DB_SERVER'],
@@ -28,7 +27,6 @@ def get_db():
                       app.config['DB_USERNAME'],
                       app.config['DB_PASSWORD'])
     return g.sql_db
-
 
 @app.teardown_appcontext
 def close_db(error):
@@ -38,25 +36,112 @@ def close_db(error):
             g.sql_db.commit()
         g.sql_db.close()
 
-
-# Get Directions from origin to destination using mode of travel from Mapbox API
+# Returns directions from an origin to a destination.
+# Mode: The method of travel. 'walking', 'cycling', and 'driving' are straightforward shots to the destination
+#	'bus' will walk the user to the nearest bus stop, use GTBus API to route to a second bus stop, and then 
+#	walk them to their destination
 @app.route('/directions', methods=['GET'])
 def get_directions():
-    origin = request.args.get('origin')
-    destination = request.args.get('destination')
-    mode = request.args.get('mode')
+	origin = request.args.get('origin')
+	destination = request.args.get('destination')
+	mode = request.args.get('mode')
 
-    if not (origin and destination and mode):  # if not all parameters are supplied
-        return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
+	if mode == 'bus':
+		origin_tuple = literal_eval(origin)
+		dest_tuple = literal_eval(destination)
+		
+		min_distance = 9999
+		
+		# Get stops from database
+		bus_stops = g.sql_db.query_dict_return('SELECT * FROM BusStop', None)
+		
+		temp_routes = []	# Routes the origin_stop uses
+		shared_routes = []	# Routes both stops use
+		
+		# Find origin_stop
+		for stop in bus_stops:
+			if abs(stop["Latitude"] - origin_tuple[0]) + abs(stop["Longitude"] - origin_tuple[1]) <= min_distance:
+				origin_stop = stop
+				temp_routes.append(stop['RouteTag'])
+				min_distance = abs(stop["Latitude"] - origin_tuple[0]) + abs(stop["Longitude"] - origin_tuple[1])
+		
+		min_distance = 9999
+		# Find destination_stop
+		for stop in bus_stops:
+			if abs(stop['Latitude'] - destination_tuple[0]) + abs(stop['Longitude'] - destination_tuple[1]) < min_distance and stop['RouteTag'] in temp_routes:
+				destination_stop = stop
+				shared_routes.append(stop['RouteTag'])
+				min_distance = abs(stop["Latitude"] - destination_tuple[0]) + abs(stop["Longitude"] - destination_tuple[1])
+		
+		# Goes through each possible route to find the one with the best arrival time
+		origin_arrival = 999999
+		destination_arrival = 999999
+		arrival_time = origin_arrival + destination_arrival
+		
+		for route in shared_routes:
+			url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/' + route + '/predictions'
+			headers= {
+				'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+			}
+			
+			response = requests.get(url, headers=headers).content
+			xmldict = xmltodict.parse(response)
+			stops = xmldict['body']['predictions']
+			
+			# Find origin_stop in predictions
+			for stop in stops:
+				if not(stop['@dirTitleBecauseNoPredictions']):
+					if stop['@stopTag'] == origin_stop['StopTag'] and stop['direction']['prediction'][0]['@seconds'] < origin_arrival:
+						origin_arrival = stop['direction']['prediction'][0]['@seconds']
+						break
+			
+			# Find destination_stop in predictions
+			for stop in stops:
+				if not(stop['@dirTitleBecauseNoPredictions']):
+					if stop['@stopTag'] == destination_stop['StopTag'] and stop['direction']['prediction'][0]['@seconds'] < destination_arrival:
+						destination_arrival = stop['direction']['prediction'][0]['@seconds']
+						break
 
-    # Make request to mapbox
-    url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin,
-                                                                                                      destination, mapbox_key)
-    response = requests.get(url).content
-    return response
+			if origin_arrival + destination_arrival < arrival_time:
+				arrival_time = origin_arrival + destination_arrival
+				fastest_route = route
+		
+		#TODO: Replace query_dict_return with something else
+		route_geometry = g.sql_db.query_one('SELECT Geometry FROM BusStop WHERE RouteName = ' + fastest_route, None)
+		
+		#Get mapbox data for walking
+		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(origin, origin_stop, key)
+		dummy_JSON = requests.get(url).content
+		walking_1 = polyline.decode(json.loads(dummy_JSON)["routes"][0]["geometry"])
+		
+		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(destination, destination_stop, key)
+		walking_2 = polyline.decode(json.loads(requests.get(url).content)["routes"][0]["geometry"])
+		
+		#Combine into full geometry, then load into JSON
+		full_geometry = polyline.encode(walking_1 + route_geometry + walking_2)
+		dummy_JSON = json.loads(dummyJSON)
+		dummy_JSON["routes"][0]["geometry"] = full_geometry
+		dummy_JSON["routes"][0]["duration"] = arrival_time #TODO: May need to manipulate arrival_time's units
+		
+		return dummy_JSON
+		
+	else:
+		if not(origin and destination and mode):  # if not all parameters are supplied
+			return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
 
+		url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin, destination, key)
 
-# Get all current bus information (id, location, direction, etc) for a specific route
+	response = requests.get(url).content
+	return response
+
+# Get all current bus information (id, location, direction, etc.) for a specific route
+# Available routes:
+#	red
+#	blue
+#	green
+#	trolley
+#	night	- Midnight Rambler
+#	tech	- T/S Express
 @app.route('/buses', methods=['GET'])
 def get_buses():  # calls gt buses vehicles method (json version)
     route = routeTags.get(request.args.get('route'), None)

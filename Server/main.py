@@ -222,12 +222,12 @@ def get_busStops():
 
             # If no prediction for this stop
             if direction is None:
-                stopInfo = {'Latitude': staticInfo.Latitude, 'Longitude': staticInfo.Longitude, 'Title': staticInfo.StopTitle, 'Prediction': -1}
+                stopInfo = {'Latitude': staticInfo.Latitude, 'Longitude': staticInfo.Longitude, 'Title': staticInfo.StopTitle, 'StopTag': staticInfo.StopTag, 'Prediction': -1}
                 stopsInfo.append(stopInfo)
             else:
                 # Only get first prediction right now
                 prediction = direction['prediction'][0]
-                stopInfo = {'Latitude': staticInfo.Latitude, 'Longitude': staticInfo.Longitude, 'Title': staticInfo.StopTitle, 'Prediction': prediction['minutes']}
+                stopInfo = {'Latitude': staticInfo.Latitude, 'Longitude': staticInfo.Longitude, 'Title': staticInfo.StopTitle, 'StopTag': staticInfo.StopTag, 'Prediction': prediction['minutes']}
                 stopsInfo.append(stopInfo)
 
         return json.dumps(stopsInfo)

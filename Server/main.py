@@ -47,56 +47,67 @@ def get_directions():
 	mode = request.args.get('mode')
 
 	if mode == 'bus':
-		origin_stop = (0,0)
-		destination_stop = (0,0)
-		
 		origin_tuple = literal_eval(origin)
 		dest_tuple = literal_eval(destination)
 		
 		min_distance = 9999
 		
 		# Get stops from database
-		bus_stops = g.sql_db.query_dict_return('SELECT DISTINCT Latitude,Longitude, FROM BusStop', None)
-		print bus_stops
+		bus_stops = g.sql_db.query_dict_return('SELECT * FROM BusStop', None)
+		
+		temp_routes = []	# Routes the origin_stop uses
+		shared_routes = []	# Routes both stops use
 		
 		# Find origin_stop
-		for counter in range(0, 14):
-			if abs(bus_stops[counter][0] - origin_tuple[0]) + abs(bus_stops[counter][1] - origin_tuple[1]) < min_distance:
-				origin_stop = bus_stops[counter]
-				min_distance = abs(bus_stops[counter][0] - origin_tuple[0]) + abs(bus_stops[counter][1] - origin_tuple[1])
+		for stop in bus_stops:
+			if abs(stop["Latitude"] - origin_tuple[0]) + abs(stop["Longitude"] - origin_tuple[1]) <= min_distance:
+				origin_stop = stop
+				temp_routes.append(stop['RouteTag'])
+				min_distance = abs(stop["Latitude"] - origin_tuple[0]) + abs(stop["Longitude"] - origin_tuple[1])
 		
 		min_distance = 9999
 		# Find destination_stop
-		for counter in range(0, 14):
-			if abs(bus_stops[counter][0] - destination_tuple[0]) + abs(bus_stops[counter][1] - destination_tuple[1]) < min_distance:
-				destination_stop = bus_stops[counter]
-				min_distance = abs(bus_stops[counter][0] - destination_tuple[0]) + abs(bus_stops[counter][1] - destination_tuple[1])
+		for stop in bus_stops:
+			if abs(stop['Latitude'] - destination_tuple[0]) + abs(stop['Longitude'] - destination_tuple[1]) < min_distance and stop['RouteTag'] in temp_routes:
+				destination_stop = stop
+				shared_routes.append(stop['RouteTag'])
+				min_distance = abs(stop["Latitude"] - destination_tuple[0]) + abs(stop["Longitude"] - destination_tuple[1])
 		
-		#origin_stop_tag = 
-		#destination_stop_tag = 
+		# Goes through each possible route to find the one with the best arrival time
+		origin_arrival = 999999
+		destination_arrival = 999999
+		arrival_time = origin_arrival + destination_arrival
 		
-		#TODO: Fix route choosing and arrival_time when GT Buses comes back online
-		# Get best bus route and when it will be at the destination
-		url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/predictions'
-		headers= {
-			'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
-		}
-		
-		response = requests.get(url, headers=headers).content
-		xmldict = xmltodict.parse(response)
+		for route in shared_routes:
+			url = 'https://gtbuses.herokuapp.com/agencies/georgia-tech/' + route + '/predictions'
+			headers= {
+				'User-Agent' : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/63.0.3239.132 Safari/537.36'
+			}
+			
+			response = requests.get(url, headers=headers).content
+			xmldict = xmltodict.parse(response)
+			stops = xmldict['body']['predictions']
+			
+			# Find origin_stop in predictions
+			for stop in stops:
+				if not(stop['@dirTitleBecauseNoPredictions']):
+					if stop['@stopTag'] == origin_stop['StopTag'] and stop['direction']['prediction'][0]['@seconds'] < origin_arrival:
+						origin_arrival = stop['direction']['prediction'][0]['@seconds']
+						break
+			
+			# Find destination_stop in predictions
+			for stop in stops:
+				if not(stop['@dirTitleBecauseNoPredictions']):
+					if stop['@stopTag'] == destination_stop['StopTag'] and stop['direction']['prediction'][0]['@seconds'] < destination_arrival:
+						destination_arrival = stop['direction']['prediction'][0]['@seconds']
+						break
 
-		# Get route with lowest arrival time
-		#route = ''
-		arrival_time = 999999
-		"""vehicles = xmldict['body']['predictions']
-		for vehicle in vehicles:
-			if not(vehicle['@dirTitleBecauseNoPredictions']):
-				if (vehicle['@stop_tag'] == origin_stop_tag and vehicle['direction']['prediction']['@seconds'] < arrival_time)
-					route = vehicle['@stop_tag']
-					arrival_time = vehicle['direction']['prediction']['@seconds']"""
+			if origin_arrival + destination_arrival < arrival_time:
+				arrival_time = origin_arrival + destination_arrival
+				fastest_route = route
 		
 		#TODO: Replace query_dict_return with something else
-		route_geometry = g.sql_db.query_dict_return('SELECT Geometry FROM BusStop WHERE RouteName = ' + route, None)
+		route_geometry = g.sql_db.query_one('SELECT Geometry FROM BusStop WHERE RouteName = ' + fastest_route, None)
 		
 		#Get mapbox data for walking
 		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(origin, origin_stop, key)

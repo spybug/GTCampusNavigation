@@ -249,9 +249,14 @@ def get_predictions():
                 stopInfo = {'StopTag': stop['stopTag'], 'Prediction': -1}
                 stopsInfo.append(stopInfo)
             else:
-                # Only get first prediction right now
-                prediction = direction['prediction'][0]
-                stopInfo = {'StopTag': stop['stopTag'], 'Prediction': prediction['minutes']}
+                predictions = []
+                # get all predictions for this stop
+                for prediction in direction['prediction']:
+                    time = int(prediction['minutes'])
+                    # Only include predictions that aren't greater than 30 minutes
+                    if time <= 30:
+                        predictions.append(time)
+                stopInfo = {'StopTag': stop['stopTag'], 'Prediction': predictions}
                 stopsInfo.append(stopInfo)
 
         return json.dumps(stopsInfo)

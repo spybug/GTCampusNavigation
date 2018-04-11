@@ -51,7 +51,7 @@ public class MapFragment extends SupportMapFragment {
     private MapboxMap mapboxMap;
     private IconFactory iconFactory;
     private Drawable busStopMarkerDrawable;
-    private Icon start_icon, destination_icon, bikestation_icon, busstop_icon;
+    private Icon start_icon, destination_icon, bikestation_icon;
     private Bitmap bus_icon;
     private String lastRouteColor;
 
@@ -240,11 +240,22 @@ public class MapFragment extends SupportMapFragment {
         }
     }
 
+    public void updateBusStops(List<BusStop> busStopPredictions) {
+        for (BusStop busStopPrediction : busStopPredictions) {
+            BusStop storedBusStop = busStopHM.get(busStopPrediction.id);
+            if (storedBusStop != null) {
+                storedBusStop.estimation_times = busStopPrediction.estimation_times;
+                Marker storedMarker = storedBusStop.marker;
+                storedMarker.setSnippet(busStopPrediction.toString());
+            }
+        }
+    }
+
     private Bitmap getBusIcon(String routeColor) {
         if (!routeColor.equals(lastRouteColor)) {
-            Drawable icon_drawable = getResources().getDrawable(R.drawable.bus_icon_white).mutate();
-            icon_drawable.setColorFilter(new PorterDuffColorFilter(Color.parseColor(routeColor), PorterDuff.Mode.SRC_IN));
-            bus_icon = Bitmap.createScaledBitmap(drawableToBitmap(icon_drawable), 50, 85, false);
+            Drawable icon_drawable = getResources().getDrawable(R.drawable.bus_icon_master).mutate();
+            icon_drawable.setColorFilter(Color.parseColor(routeColor), PorterDuff.Mode.MULTIPLY);
+            bus_icon = drawableToBitmap(icon_drawable, 50, 85);
             lastRouteColor = routeColor;
         }
         return bus_icon;

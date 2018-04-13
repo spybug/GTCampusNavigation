@@ -316,8 +316,8 @@ def get_bikes():
             # Format all the information we want to return
             stationInfo = {
                 "station_id": id, 
-                "name": row[1], 
-                "lat": row[2], "lon": row[3],
+                "name": row.StationName,
+                "lat": row.Latitude, "lon": row.Longitude,
                 "num_bikes_available": station['num_bikes_available'], 
                 "num_bikes_disabled": station['num_bikes_disabled'],
                 "num_docks_available": station['num_docks_available'], 

@@ -246,7 +246,8 @@ def get_predictions():
 
             # If no prediction for this stop
             if direction is None:
-                stopInfo = {'StopTag': stop['stopTag'], 'Prediction': -1}
+                predictions = []
+                stopInfo = {'StopTag': stop['stopTag'], 'Prediction': predictions}
                 stopsInfo.append(stopInfo)
             else:
                 predictions = []

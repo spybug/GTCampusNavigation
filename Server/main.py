@@ -84,8 +84,8 @@ def get_buses():  # calls gt buses vehicles method (json version)
 
 
 # Get bus route geometry as an encoded polyline for a specific route from gt buses
-@app.route('/routes', methods=['GET'])
-def get_routes():  # calls gt buses routes method (json version)
+@app.route('/routes_server', methods=['GET'])
+def get_routes_from_server():  # calls gt buses routes method (json version)
     routeTag = routeTags.get(request.args.get('route'), None)
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
@@ -149,6 +149,29 @@ def get_routes():  # calls gt buses routes method (json version)
     json_result = {"route": encodedPolyline}
 
     return json.dumps(json_result)
+
+
+# Get bus route geometry as an encoded polyline from database
+@app.route('/routes', methods=['GET'])
+def get_routes():
+    routeTag = routeTags.get(request.args.get('route'), None)
+
+    if not routeTag:  # Return nothing if no route is supplied
+        return ''
+
+    try:
+        get_db()
+
+        # Get static bus stop information from database
+        row = g.sql_db.query_one('SELECT Geometry FROM BusRoute WHERE RouteTag = ?', routeTag)
+        encodedPolyline = row.Geometry
+        json_result = {"route": encodedPolyline}
+
+        return json.dumps(json_result)
+
+    except Exception as e:
+        print(str(e))
+        return ''
 
 
 # Adds all bus stops to the database (given that there aren't in there already)

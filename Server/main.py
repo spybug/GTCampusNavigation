@@ -318,5 +318,10 @@ def get_bikes():
         return ''
 
 
+@app.route('/faq', methods=['GET'])
+def get_faq():
+    return app.send_static_file('FAQ.html')
+
+
 if __name__ == '__main__':
     app.run(host='localhost', port=8080, debug=True)

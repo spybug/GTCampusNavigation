@@ -110,11 +110,11 @@ def get_directions():
 		route_geometry = g.sql_db.query_one('SELECT Geometry FROM BusStop WHERE RouteName = ' + fastest_route, None)
 		
 		#Get mapbox data for walking
-		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(origin, origin_stop, key)
+		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(origin, origin_stop, mapbox_key)
 		dummy_JSON = requests.get(url).content
 		walking_1 = polyline.decode(json.loads(dummy_JSON)["routes"][0]["geometry"])
 		
-		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(destination, destination_stop, key)
+		url = 'https://api.mapbox.com/directions/v5/mapbox/walking/{};{}?overview=full&access_token={}'.format(destination, destination_stop, mapbox_key)
 		walking_2 = polyline.decode(json.loads(requests.get(url).content)["routes"][0]["geometry"])
 		
 		#Combine into full geometry, then load into JSON
@@ -129,7 +129,7 @@ def get_directions():
 		if not(origin and destination and mode):  # if not all parameters are supplied
 			return 'Missing one or more parameters, need: origin(long,lat), destination(long,lat) and mode(walking, cycling, driving)'
 
-		url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin, destination, key)
+		url = 'https://api.mapbox.com/directions/v5/mapbox/{}/{};{}?overview=full&access_token={}'.format(mode, origin, destination, mapbox_key)
 
 	response = requests.get(url).content
 	return response

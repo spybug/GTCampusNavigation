@@ -169,8 +169,8 @@ def get_buses():  # calls gt buses vehicles method (json version)
 
 
 # Get bus route geometry as an encoded polyline for a specific route from gt buses
-@app.route('/routes', methods=['GET'])
-def get_routes():  # calls gt buses routes method (json version)
+@app.route('/routes_server', methods=['GET'])
+def get_routes_from_server():  # calls gt buses routes method (json version)
     routeTag = routeTags.get(request.args.get('route'), None)
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/routes'
@@ -234,6 +234,29 @@ def get_routes():  # calls gt buses routes method (json version)
     json_result = {"route": encodedPolyline}
 
     return json.dumps(json_result)
+
+
+# Get bus route geometry as an encoded polyline from database
+@app.route('/routes', methods=['GET'])
+def get_routes():
+    routeTag = routeTags.get(request.args.get('route'), None)
+
+    if not routeTag:  # Return nothing if no route is supplied
+        return ''
+
+    try:
+        get_db()
+
+        # Get static bus stop information from database
+        row = g.sql_db.query_one('SELECT Geometry FROM BusRoute WHERE RouteTag = ?', routeTag)
+        encodedPolyline = row.Geometry
+        json_result = {"route": encodedPolyline}
+
+        return json.dumps(json_result)
+
+    except Exception as e:
+        print(str(e))
+        return ''
 
 
 # Adds all bus stops to the database (given that there aren't in there already)
@@ -331,7 +354,8 @@ def get_predictions():
 
             # If no prediction for this stop
             if direction is None:
-                stopInfo = {'StopTag': stop['stopTag'], 'Prediction': -1}
+                predictions = []
+                stopInfo = {'StopTag': stop['stopTag'], 'Prediction': predictions}
                 stopsInfo.append(stopInfo)
             else:
                 predictions = []
@@ -377,8 +401,8 @@ def get_bikes():
             # Format all the information we want to return
             stationInfo = {
                 "station_id": id, 
-                "name": row[1], 
-                "lat": row[2], "lon": row[3],
+                "name": row.StationName,
+                "lat": row.Latitude, "lon": row.Longitude,
                 "num_bikes_available": station['num_bikes_available'], 
                 "num_bikes_disabled": station['num_bikes_disabled'],
                 "num_docks_available": station['num_docks_available'], 
@@ -400,6 +424,11 @@ def get_bikes():
     except Exception as e:
         print(str(e))
         return ''
+
+
+@app.route('/faq', methods=['GET'])
+def get_faq():
+    return app.send_static_file('FAQ.html')
 
 
 if __name__ == '__main__':

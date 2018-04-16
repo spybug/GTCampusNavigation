@@ -1,12 +1,14 @@
 package com.spybug.gtnav.fragments;
 
 import android.content.Context;
+import android.content.SharedPreferences;
 import android.content.res.ColorStateList;
 import android.content.res.Resources;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
+import android.preference.PreferenceManager;
 import android.support.design.widget.FloatingActionButton;
 import android.support.v4.app.Fragment;
 import android.view.LayoutInflater;
@@ -45,6 +47,7 @@ public class BusMapOverlayFragment extends Fragment {
     private View view;
     private Handler handler;
     private final int busDelayms = 15000; //15 seconds
+    private SharedPreferences prefs;
 
     private boolean routeCreated = false;
     private boolean fabExpanded = false;
@@ -85,12 +88,33 @@ public class BusMapOverlayFragment extends Fragment {
             }
         }
 
+        public int getInt() {
+            switch (this.name()) {
+                case "RED":
+                    return 0;
+                case "BLUE":
+                    return 1;
+                case "GREEN":
+                    return 2;
+                case "TROLLEY":
+                    return 3;
+                case "EXPRESS":
+                    return 4;
+                case "MIDNIGHT":
+                    return 5;
+                default:
+                    return 0;
+            }
+        }
+
         @Override
         public String toString() {
             return text;
         }
     }
+
     private CurrentRoute currentRoute;
+    private final CurrentRoute[] currentRouteRoutes = CurrentRoute.values();
 
     public BusMapOverlayFragment() {
         // Required empty public constructor
@@ -99,8 +123,14 @@ public class BusMapOverlayFragment extends Fragment {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        getResources().getColor(R.color.redRoute);
-        currentRoute = CurrentRoute.RED; //default
+
+        CurrentRoute savedRoute = CurrentRoute.RED; //Default value
+        prefs = PreferenceManager.getDefaultSharedPreferences(getContext());
+        if (prefs != null) {
+            savedRoute = currentRouteRoutes[prefs.getInt("lastRoute", 0)];
+        }
+
+        currentRoute = savedRoute;
     }
 
     @Override
@@ -166,6 +196,8 @@ public class BusMapOverlayFragment extends Fragment {
                     getBusStops(currentRoute);
                     getBusLocations(currentRoute);
                     handler.postDelayed(busUpdater, busDelayms);
+
+                    prefs.edit().putInt("lastRoute", currentRoute.getInt()).apply();
                 }
             }
         };
@@ -188,7 +220,6 @@ public class BusMapOverlayFragment extends Fragment {
             }
         });
 
-        currentRoute = CurrentRoute.RED; //Default route, will be set based on saved last viewed route later
         closeSubMenusFab(ColorStateList.valueOf(
                 Color.parseColor(currentRoute.getColor(view.getContext()))));
 
@@ -212,9 +243,11 @@ public class BusMapOverlayFragment extends Fragment {
         new BusLocationsServerRequest(view.getContext(), new OnEventListener<List<Bus>, String>() {
             @Override
             public void onSuccess(List<Bus> buses) {
-                MainActivity communicator = (MainActivity) getActivity();
-                if (communicator != null) {
-                    communicator.passBusLocationsToMap(buses, fRouteColor);
+                if (!buses.isEmpty() && buses.get(0).routeName.equals(currentRoute.toString())) {
+                    MainActivity communicator = (MainActivity) getActivity();
+                    if (communicator != null) {
+                        communicator.passBusLocationsToMap(buses, fRouteColor);
+                    }
                 }
             }
 
@@ -228,12 +261,14 @@ public class BusMapOverlayFragment extends Fragment {
     private void getBusRoute(CurrentRoute route) {
         final String fRouteColor = route.getColor(view.getContext());
 
-        new BusRouteServerRequest(view.getContext(), new OnEventListener<List<List<LatLng>>, String>() {
+        new BusRouteServerRequest(view.getContext(), new OnEventListener<List<LatLng>, String>() {
             @Override
-            public void onSuccess(List<List<LatLng>> route) {
-                MainActivity communicator = (MainActivity) getActivity();
-                if (communicator != null) {
-                    communicator.passBusRouteToMap(route, fRouteColor);
+            public void onSuccess(List<LatLng> route) {
+                if (!route.isEmpty()) {
+                    MainActivity communicator = (MainActivity) getActivity();
+                    if (communicator != null) {
+                        communicator.passBusRouteToMap(route, fRouteColor);
+                    }
                 }
             }
 
@@ -251,11 +286,13 @@ public class BusMapOverlayFragment extends Fragment {
         new BusStopServerRequest(view.getContext(), new OnEventListener<List<BusStop>, String>() {
             @Override
             public void onSuccess(List<BusStop> stops) {
-                MainActivity communicator = (MainActivity) getActivity();
-                if (communicator != null) {
-                    communicator.passBusStopsToMap(stops, fRouteColor);
+                if (!stops.isEmpty() && stops.get(0).routeName.equals(currentRoute.toString())) {
+                    MainActivity communicator = (MainActivity) getActivity();
+                    if (communicator != null) {
+                        communicator.passBusStopsToMap(stops, fRouteColor);
+                    }
+                    getBusStopPredictions(fRouteName);
                 }
-                getBusStopPredictions(fRouteName);
             }
 
             @Override

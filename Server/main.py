@@ -66,12 +66,13 @@ def get_buses():  # calls gt buses vehicles method (json version)
 
     response = requests.get(url, headers=headers).json()
 
-    # Return all buses if no route is specified
+    vehicleIDs = []
+
+    # Return an empty array if route is invalid
     if not route:
-        return json.dumps(response)
+        return json.dumps(vehicleIDs)
 
     vehicles = response['vehicle']
-    vehicleIDs = []
 
     for vehicle in vehicles:  # Loop through all the vehicles and only return the ones for the route we want
         if vehicle['routeTag'] == route:
@@ -79,8 +80,7 @@ def get_buses():  # calls gt buses vehicles method (json version)
                            'lat': vehicle['lat'], 'lon': vehicle['lon']}
             vehicleIDs.append(vehicleInfo)
 
-    result = vehicleIDs
-    return json.dumps(result)
+    return json.dumps(vehicleIDs)
 
 
 # Get bus route geometry as an encoded polyline for a specific route from gt buses
@@ -156,22 +156,24 @@ def get_routes_from_server():  # calls gt buses routes method (json version)
 def get_routes():
     routeTag = routeTags.get(request.args.get('route'), None)
 
-    if not routeTag:  # Return nothing if no route is supplied
-        return ''
+    json_result = {"route": ''}
+
+    if not routeTag:  # Return empty json if no route is supplied or its incorrect
+        return json.dumps(json_result)
 
     try:
         get_db()
 
         # Get static bus stop information from database
         row = g.sql_db.query_one('SELECT Geometry FROM BusRoute WHERE RouteTag = ?', routeTag)
-        encodedPolyline = row.Geometry
-        json_result = {"route": encodedPolyline}
-
-        return json.dumps(json_result)
+        if row is not None:
+            encodedPolyline = row.Geometry
+            json_result = {"route": encodedPolyline}
 
     except Exception as e:
         print(str(e))
-        return ''
+
+    return json.dumps(json_result)
 
 
 # Adds all bus stops to the database (given that there aren't in there already)
@@ -217,12 +219,13 @@ def add_busStops():  # Calls gt buses route method to get all route information
 def get_busStops():
     routeTag = routeTags.get(request.args.get('route'), None)
 
+    stopsInfo = []  # Final result object
+
     if routeTag is None:
-        return ''
+        return json.dumps(stopsInfo)
 
     try:
         get_db()
-        stopsInfo = []      # Final result object
 
         # Get static bus stop information from database
         results = g.sql_db.query_many('SELECT * FROM BusStop WHERE RouteTag = ?', routeTag)
@@ -231,11 +234,10 @@ def get_busStops():
                         'Title': row.StopTitle, 'StopTag': row.StopTag}
             stopsInfo.append(stopInfo)
 
-        return json.dumps(stopsInfo)
-
     except Exception as e:
         print(str(e))
-        return ''
+
+    return json.dumps(stopsInfo)
 
 
 # Get bus stops for a specific route from database
@@ -244,13 +246,14 @@ def get_busStops():
 def get_predictions():
     routeTag = routeTags.get(request.args.get('route'), None)
 
+    stopsInfo = []  # Final result object
+
     if routeTag is None:
-        return ''
+        return json.dumps(stopsInfo)
 
     url = 'https://gtbuses.herokuapp.com/api/v1/agencies/georgia-tech/multiPredictions?'
     try:
         get_db()
-        stopsInfo = []  # Final result object
 
         # Get static bus stop information from database
         results = g.sql_db.query_many('SELECT * FROM BusStop WHERE RouteTag = ?', routeTag)
@@ -283,23 +286,23 @@ def get_predictions():
                 stopInfo = {'StopTag': stop['stopTag'], 'Prediction': predictions}
                 stopsInfo.append(stopInfo)
 
-        return json.dumps(stopsInfo)
-
     except Exception as e:
         print(str(e))
-        return ''
+
+    return json.dumps(stopsInfo)
 
 
 # Get all Relay bike station information (location, bikes, docks, etc) from Relay API and our database
 @app.route('/bikes', methods=['GET'])
 def get_bikes():
+    stations = []
+
     try:
         get_db()
         # Get bike station status from relay bikes api
         url = 'https://relaybikeshare.socialbicycles.com/opendata/station_status.json'
         response = requests.get(url).json()
         response = response['data']['stations']  # only use station info
-        stations = []
 
         # Get Static Bike station info such as location from database
         results = g.sql_db.query_dict_return('SELECT * FROM BikeStation', None)
@@ -335,10 +338,10 @@ def get_bikes():
             # can also check on insert but this shows bounding box
             # DELETE FROM BikeStation WHERE Latitude < 33.75744 OR Latitude > 33.795217 OR Longitude < -84.418489 OR Longitude > -84.368278;
 
-        return json.dumps(stations)
     except Exception as e:
         print(str(e))
-        return ''
+
+    return json.dumps(stations)
 
 
 @app.route('/faq', methods=['GET'])
